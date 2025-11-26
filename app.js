@@ -1,11 +1,16 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
+const db = require('./config/db');
+const authRoutes = require('./routes/auth');
 
-
-// Middleware untuk parsing JSON
+// Middleware
+app.use(cors());
+// untuk parsing JSON
 app.use(express.json());
 // Untuk routing file HTML/CSS/JS static
 app.use(express.static('public')); 
+app.use('/api/auth', authRoutes);
 
 
 
