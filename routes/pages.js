@@ -2,23 +2,26 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 
-// Helper function agar tidak perlu ketik path.join berulang kali
-// Ini mengarah ke folder 'public' di root project
+// Helper function untuk ambil file dari folder public
 const publicPath = (fileName) => path.join(__dirname, '../public', fileName);
 
 // --- PUBLIC ROUTES ---
 router.get('/', (req, res) => res.redirect('/login'));
-router.get('/login', (req, res) => res.sendFile(publicPath('login.html')));
+router.get('/login', (req, res) => 
+    res.sendFile(publicPath('login.html'))
+);
 
 // --- MAHASISWA ---
-router.get('/student/schedule', (req, res) => res.sendFile(publicPath('/student/student_schedule.html')));
+router.get('/student/schedule', (req, res) =>
+    res.sendFile(publicPath('student/student_schedule.html'))
+);
+
+router.get('/student/calendar', (req, res) =>
+    res.sendFile(publicPath('student/calendar.html'))
+);
 
 // --- DOSEN ---
 
 // --- ADMIN ---
-
-
-// Fallback 404
-// router.get('*', (req, res) => res.status(404).send('Halaman tidak ditemukan'));
 
 module.exports = router;
