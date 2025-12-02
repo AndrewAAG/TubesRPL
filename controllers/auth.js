@@ -27,7 +27,7 @@ exports.login = async (req, res) => {
 
         switch (user.role) {
             case 'student': // Sesuai ENUM di database
-                targetUrl = '/student';
+                targetUrl = '/student/schedule';
                 break;
             case 'lecturer':
                 targetUrl = '/lecturer';
@@ -47,9 +47,10 @@ exports.login = async (req, res) => {
             message: 'Login berhasil!',
             redirectUrl: targetUrl, // Frontend akan membaca ini
             user: {
-                id: user.user_id,
+                user_id: user.user_id,
                 name: user.name,
-                role: user.role
+                role: user.role,
+                npm: user.npm || user.nip
             }
         });
 

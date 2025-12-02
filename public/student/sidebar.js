@@ -22,7 +22,7 @@ function renderSidebar() {
         <div class="nav-custom">
             <small class="text-white-50 text-uppercase fw-bold ps-4 mb-2 d-block" style="font-size: 0.7rem;">Penjadwalan</small>
             
-            <a class="nav-item-custom active" href="student_dashboard.html">
+            <a class="nav-item-custom active" href="/student/schedule">
                 <i class="fas fa-calendar-alt me-3 text-center" style="width: 20px;"></i> Jadwal Bimbingan
             </a>
             <a class="nav-item-custom" href="#">
