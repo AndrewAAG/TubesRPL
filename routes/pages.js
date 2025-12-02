@@ -17,6 +17,7 @@ router.get('/student/evaluation', (req, res) => res.sendFile(publicPath('/studen
 router.get('/student/evaluation/detail', (req, res) => res.sendFile(publicPath('/student/student_evaluation_detail.html')));
 
 // --- DOSEN ---
+router.get('/lecturer/schedule', (req, res) => res.sendFile(publicPath('/lecturer/lecturer_schedule.html')));
 
 // --- ADMIN ---
 
