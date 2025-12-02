@@ -122,3 +122,76 @@ body, html {
     align-items: center;
     justify-content: center;
 }
+
+
+/* HALAMAN PELACAK KEMAJUAN --- */
+
+
+/* Card Putih Besar (Progress Utama) */
+.card-standard {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    border: 1px solid #f0f0f0; 
+}
+
+/* Card Header Biru (Riwayat & Tugas) */
+.card-blue-header {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header-custom {
+    background-color: #4285f4; 
+    color: white;
+    padding: 15px 25px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.card-body-custom {
+    padding: 0; 
+    background: white;
+    flex-grow: 1;
+}
+
+/* List Item (Baris di dalam card biru) */
+.list-item-row {
+    padding: 18px 25px; 
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+.list-item-row:last-child {
+    border-bottom: none; 
+}
+.list-item-row:hover {
+    background-color: #fcfcfc;
+}
+
+/* Badges Status Tugas (Completed/Incomplete) */
+/* Badge Hijau */
+.badge-task-completed {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+/* Badge Merah */
+.badge-task-incomplete {
+    background-color: #f8d7da; 
+    color: #842029; 
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}

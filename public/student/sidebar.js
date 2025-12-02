@@ -1,13 +1,17 @@
-// public/js/components/sidebar.js
-
 function renderSidebar() {
     const userSession = JSON.parse(localStorage.getItem('user_session')) || { 
         name: 'Andrew Alexander', role: 'student', npm: '6182301010' 
     };
 
+    // Deteksi URL halaman saat ini
+    const path = window.location.pathname;
+
+    // Helper function untuk menentukan class active
+    const isActive = (keyword) => path.includes(keyword) ? 'active' : '';
+
     const sidebarHTML = `
         <div class="text-center pt-5 pb-4 px-4">
-            <img src="../images/FA - Logo Berwarna UNPAR - Horizontal - Wordmark Hitam.png" 
+            <img src="../images/LogoUnparHitam.png" 
                  alt="Logo UNPAR" 
                  style="width: 100%; max-width: 180px; height: auto;"> 
         </div>
@@ -22,12 +26,14 @@ function renderSidebar() {
         <div class="nav-custom">
             <small class="text-white-50 text-uppercase fw-bold ps-4 mb-2 d-block" style="font-size: 0.7rem;">Penjadwalan</small>
             
-            <a class="nav-item-custom active" href="/student/schedule">
+            <a class="nav-item-custom ${isActive('schedule')}" href="/student/schedule">
                 <i class="fas fa-calendar-alt me-3 text-center" style="width: 20px;"></i> Jadwal Bimbingan
             </a>
-            <a class="nav-item-custom" href="#">
+            
+            <a class="nav-item-custom ${isActive('progress')}" href="/student/progress">
                 <i class="fas fa-chart-line me-3 text-center" style="width: 20px;"></i> Pelacak Kemajuan
             </a>
+            
             <a class="nav-item-custom" href="#">
                 <i class="far fa-calendar me-3 text-center" style="width: 20px;"></i> Kalender
             </a>
@@ -37,18 +43,13 @@ function renderSidebar() {
             <a class="nav-item-custom" href="#">
                 <i class="fas fa-file-import me-3 text-center" style="width: 20px;"></i> Import Jadwal
             </a>
-
-            <div class="mt-4"></div>
-            <small class="text-white-50 text-uppercase fw-bold ps-4 mb-2 d-block" style="font-size: 0.7rem;">Dokumen</small>
-            <a class="nav-item-custom" href="#">
-                <i class="fas fa-book me-3 text-center" style="width: 20px;"></i> Topik TA
-            </a>
             
             <div style="height: 50px;"></div>
         </div>
     `;
 
-    document.getElementById('sidebar-wrapper').innerHTML = sidebarHTML;
+    const wrapper = document.getElementById('sidebar-wrapper');
+    if(wrapper) wrapper.innerHTML = sidebarHTML;
 }
 
 renderSidebar();
