@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pelacak Kemajuan - Student</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <div class="container-fluid h-100">
+      <div class="row h-100">
+        <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
+
+        <div class="col-md-9 col-lg-10 h-100 p-0 position-relative">
+          <div class="main-content-scrollable">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+              <div>
+                <h2 class="fw-bold text-primary mb-1">Pelacak Kemajuan</h2>
+              </div>
+
+              <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <div class="notification-circle">
+                  <i class="fas fa-bell fa-lg text-secondary"></i>
+                  <span class="badge-dot">2</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-standard mb-4 p-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Status Kelayakan Sidang</h5>
+
+                <span class="badge rounded-pill bg-secondary text-white px-4 py-2 fs-6 fw-bold"> Loading... </span>
+              </div>
+
+              <hr class="dashed-line my-3" />
+
+              <div id="progress-bars-wrapper"></div>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="card-blue-header h-100">
+                  <div class="card-header-custom"><i class="fas fa-history me-2"></i> Riwayat Bimbingan</div>
+                  <div class="card-body-custom" id="history-container"></div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="card-blue-header h-100">
+                  <div class="card-header-custom"><i class="fas fa-clipboard-list me-2"></i> Tugas Dari Dosen</div>
+                  <div class="card-body-custom" id="tasks-container"></div>
+                </div>
+              </div>
+            </div>
+            <div style="height: 50px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar.js"></script>
+    <script>
+      async function fetchProgressData() {
+        // 1. Cek Sesi User
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+
+        if (!userSession || !userSession.user_id) {
+          alert("Sesi habis, silakan login kembali.");
+          window.location.href = "login.html";
+          return;
+        }
+
+        try {
+          // 2. Request ke API
+          const response = await fetch(`/api/progress/student/${userSession.user_id}`);
+          const result = await response.json();
+
+          if (result.success) {
+            // 3. Render Halaman jika sukses
+            renderPage(result.data);
+          } else {
+            console.error("Backend Error:", result.message);
+            // Tampilkan error di container utama jika ada
+            const wrapper = document.getElementById("progress-bars-wrapper");
+            if (wrapper) wrapper.innerHTML = `<div class="text-danger text-center p-3">${result.message}</div>`;
+          }
+        } catch (error) {
+          console.error("Gagal mengambil data progress:", error);
+        }
+      }
+
+      // Fungsi Orchestrator untuk Render
+      function renderPage(data) {
+        renderStatusBadge(data.progress);
+        renderProgressBars(data.progress.bars);
+        renderHistory(data.history);
+        renderTasks(data.tasks);
+      }
+
+      // A. Render Badge Status Utama (Pojok Kanan Atas)
+      function renderStatusBadge(progressData) {
+        const badge = document.querySelector(".card-standard .badge");
+
+        if (!badge) return; // Stop jika elemen tidak ada
+
+        badge.textContent = progressData.status_text;
+
+        // Reset Class
+        badge.className = "badge rounded-pill px-4 py-2 fs-6 fw-bold";
+
+        // Set Warna berdasarkan data backend
+        if (progressData.status_color === "success") {
+          badge.classList.add("bg-success-subtle", "text-success");
+        } else if (progressData.status_color === "danger") {
+          badge.classList.add("bg-danger-subtle", "text-danger");
+        } else {
+          badge.classList.add("bg-warning-subtle", "text-warning"); // Default Warning
+        }
+      }
+
+      // B. Render Progress Bars (Bisa 1 atau 2 bar)
+      function renderProgressBars(bars) {
+        const container = document.getElementById("progress-bars-wrapper");
+        if (!container) return;
+
+        let html = "";
+
+        bars.forEach((bar, index) => {
+          // Tambahkan garis pemisah tipis jika ada 2 bar
+          const separator = index > 0 ? '<hr class="dashed-line my-4">' : "";
+
+          // Warna Bar: Jika penuh (100%), ganti jadi Hijau agar terlihat "Selesai"
+          const barColor = bar.percent >= 100 ? '#198754' : '#0d6efd';
+
+          html += `
+            ${separator}
+            <div>
+                <div class="d-flex justify-content-between align-items-end mb-2">
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">${bar.label}</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Target: ${bar.target} Pertemuan</small>
+                    </div>
+                    <span class="badge bg-light text-dark border">${bar.current}/${bar.target}</span>
+                </div>
+                
+                <div class="progress" style="height: 15px; border-radius: 10px; background-color: #f1f3f5; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: ${bar.percent}%; background-color: ${barColor}; border-radius: 10px;" 
+                         aria-valuenow="${bar.percent}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+        `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      // C. Render Riwayat Bimbingan (Kiri Bawah)
+      function renderHistory(history) {
+        const container = document.getElementById("history-container");
+        if (!container) return;
+
+        let html = "";
+
+        if (history.length === 0) {
+          html = '<div class="p-4 text-center text-muted small">Belum ada riwayat bimbingan yang selesai.</div>';
+        } else {
+          history.forEach((item) => {
+            html += `
+            <div class="list-item-row">
+                <div class="fw-bold text-dark" style="font-size: 0.95rem;">
+                    <i class="far fa-calendar-check me-2 text-primary"></i>${item.date}
+                </div>
+                <div class="text-muted small mt-1 ps-4">${item.topic}</div>
+            </div>`;
+          });
+        }
+        container.innerHTML = html;
+      }
+
+      // D. Render Tugas Dari Dosen (Kanan Bawah)
+      function renderTasks(tasks) {
+        const container = document.getElementById("tasks-container");
+        if (!container) return;
+
+        let html = "";
+
+        if (tasks.length === 0) {
+          html = '<div class="p-4 text-center text-muted small">Tidak ada tugas aktif.</div>';
+        } else {
+          tasks.forEach((item) => {
+            // Tentukan warna badge tugas
+            let badgeClass = "badge-task-incomplete"; // Default merah
+            if (item.status === "Completed") badgeClass = "badge-task-completed";
+            else if (item.status === "In Progress") badgeClass = "badge rounded-pill bg-info-subtle text-info fw-bold small";
+
+            html += `
+            <div class="list-item-row d-flex justify-content-between align-items-center">
+                <div class="text-secondary fw-medium" style="font-size: 0.9rem;">${item.name}</div>
+                <span class="${badgeClass} px-3 py-1">${item.status}</span>
+            </div>`;
+          });
+        }
+        container.innerHTML = html;
+      }
+
+      // Jalankan saat halaman siap
+      document.addEventListener("DOMContentLoaded", fetchProgressData);
+    </script>
+  </body>
+</html>

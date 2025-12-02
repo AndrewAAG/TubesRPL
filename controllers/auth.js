@@ -30,7 +30,7 @@ exports.login = async (req, res) => {
                 targetUrl = '/student/schedule';
                 break;
             case 'lecturer':
-                targetUrl = '/lecturer';
+                targetUrl = '/lecturer/schedule';
                 break;
             case 'coordinator':
                 targetUrl = '/coordinator';

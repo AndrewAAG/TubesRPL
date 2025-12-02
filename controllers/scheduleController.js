@@ -48,6 +48,46 @@ exports.getStudentSchedules = async (req, res) => {
     }
 };
 
+exports.rescheduleAppointment = async (req, res) => {
+    const { id } = req.params; 
+    const { date, timeStart, timeEnd, reason } = req.body; 
+
+    try {
+        // 1. VALIDASI INPUT
+        if (!date || !timeStart || !timeEnd) {
+            return res.status(400).json({ success: false, message: 'Data tanggal dan waktu harus lengkap' });
+        }
+
+        // 2. VALIDASI WAKTU (Tidak Boleh Masa Lalu)
+        const newStartObj = new Date(`${date}T${timeStart}`);
+        const now = new Date();
+
+        if (newStartObj <= now) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Tanggal reschedule harus di masa depan.' 
+            });
+        }
+
+        // 3. SIAPKAN DATA UNTUK MODEL
+        const newStartTime = `${date} ${timeStart}:00`;
+        const newEndTime = `${date} ${timeEnd}:00`;
+
+        // 4. JALANKAN UPDATE DI MODEL
+        const result = await ScheduleModel.reschedule(id, newStartTime, newEndTime, reason);
+
+        if (result) {
+            res.json({ success: true, message: 'Jadwal berhasil diubah dan status kembali menjadi Pending.' });
+        } else {
+            res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan.' });
+        }
+
+    } catch (error) {
+        console.error("Reschedule Error:", error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan server saat reschedule.' });
+    }
+};
+
 // Translate status DB ke Bahasa Indonesia
 function mapStatusToLabel(status) {
     switch (status) {

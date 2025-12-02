@@ -29,6 +29,49 @@ class ScheduleModel {
             throw error;
         }
     }
+
+    static async reschedule(appId, newStart, newEnd, reason) {
+        try {
+            // Kita lakukan Transaction agar data konsisten
+            const connection = await db.getConnection();
+            await connection.beginTransaction();
+
+            try {
+                // 1. Update Tabel Utama (Appointments)
+                // Status kita reset jadi 'pending' agar butuh approval ulang
+                // Notes kita tambahkan log alasannya
+                const queryApp = `
+                    UPDATE appointments 
+                    SET start_time = ?, 
+                        end_time = ?, 
+                        status = 'pending',
+                        notes = CONCAT(IFNULL(notes, ''), ' [Reschedule: ', ?, ']')
+                    WHERE app_id = ?
+                `;
+                await connection.execute(queryApp, [newStart, newEnd, reason || 'Perubahan Jadwal', appId]);
+
+                // 2. Reset Status Dosen di Tabel Pivot (Appointment_Lecturers)
+                // Agar dosen/mahasiswa harus klik 'Approve' lagi nanti
+                const queryPivot = `
+                    UPDATE appointment_lecturers 
+                    SET response_status = 'pending' 
+                    WHERE app_id = ?
+                `;
+                await connection.execute(queryPivot, [appId]);
+
+                await connection.commit();
+                return true;
+
+            } catch (err) {
+                await connection.rollback();
+                throw err;
+            } finally {
+                connection.release();
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = ScheduleModel;
