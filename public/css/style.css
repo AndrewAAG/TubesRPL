@@ -122,3 +122,112 @@ body, html {
     align-items: center;
     justify-content: center;
 }
+
+/* --- CSS POP-UP NOTIFIKASI --- */
+
+/* 1. Overlay & Posisi Container */
+.notification-overlay {
+    display: none; /* Wajib: Sembunyi saat awal */
+    position: absolute; /* Agar menempel pada parent yang relative */
+    z-index: 9999; /* Agar muncul di paling atas (di atas tabel jadwal) */
+    top: 60px; /* Sesuaikan tinggi ini agar pas di bawah lonceng */
+    right: 20px; /* Jarak dari kanan layar */
+}
+
+/* 2. Kotak Biru Utama */
+.notification-container {
+    width: 350px;
+    background-color: #2b8bf2; /* Warna Biru Utama */
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    
+    /* Animasi Muncul */
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 3. Header & Tombol Close */
+.notif-header {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.notif-header .close-btn {
+    background: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    color: #2b8bf2;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 4. Area Konten (List Notifikasi) */
+.notif-content {
+    max-height: 300px; /* Batasi tinggi agar bisa discroll */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Scrollbar styling (opsional agar rapi) */
+.notif-content::-webkit-scrollbar {
+    width: 5px;
+}
+.notif-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+}
+
+/* 5. Kartu Putih Item Notifikasi */
+.notif-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.notif-title {
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.notif-body {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* 6. Footer Tombol Tambah */
+.notif-footer .add-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #1a6fd3;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.notif-footer .add-btn:hover {
+    background-color: #145aab;
+}
