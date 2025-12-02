@@ -6,6 +6,7 @@ const pageRoutes = require('./routes/pages');
 const authRoutes = require('./routes/auth');
 const scheduleRoutes = require('./routes/schedule');
 const progressRoutes = require('./routes/progress');
+const evaluationRoutes = require('./routes/evaluation');
 
 // Middleware
 app.use(cors());
@@ -21,6 +22,7 @@ app.use(express.static('public', { index: false, extensions: ['css', 'js', 'png'
 app.use('/api/auth', authRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use("/api/progress", progressRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 
 // Frontend Page Routs (HTML)
 app.use('/', pageRoutes);

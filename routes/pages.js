@@ -13,6 +13,8 @@ router.get('/login', (req, res) => res.sendFile(publicPath('login.html')));
 // --- MAHASISWA ---
 router.get('/student/schedule', (req, res) => res.sendFile(publicPath('/student/student_schedule.html')));
 router.get('/student/progress', (req, res) => res.sendFile(publicPath('/student/student_progress.html')));
+router.get('/student/evaluation', (req, res) => res.sendFile(publicPath('/student/student_evaluation.html')));
+router.get('/student/evaluation/detail', (req, res) => res.sendFile(publicPath('/student/student_evaluation_detail.html')));
 
 // --- DOSEN ---
 
