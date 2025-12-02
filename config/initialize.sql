@@ -243,3 +243,22 @@ INSERT IGNORE INTO appointment_lecturers VALUES (103, 2, 'pending', NULL);
 -- 9. NOTIFIKASI
 INSERT IGNORE INTO notifications (user_id, title, content, is_read) VALUES
 (5, 'Jadwal Disetujui', 'Pengajuan bimbingan 8 Oktober disetujui.', FALSE);
+
+-- ADD DATA USER YANG TA1-TA2 BARENGAN
+INSERT IGNORE INTO users (user_id, name, email, password, role) VALUES 
+(99, 'Budi Double TA', 'budi@student.unpar.ac.id', '123456', 'student');
+
+INSERT IGNORE INTO students (user_id, npm, cohort_year) VALUES (99, '6182301099', 2021);
+
+-- Thesis dengan tipe 'TA1-TA2'
+INSERT IGNORE INTO thesis (student_id, semester_id, title, stage_type) VALUES
+(99, 2, 'Pengembangan Sistem Double Track', 'TA1-TA2');
+
+-- Data Bimbingan (Anggap dia rajin, sudah 6 kali bimbingan total)
+INSERT IGNORE INTO appointments (app_id, student_id, start_time, end_time, location, mode, origin, status, notes) VALUES 
+(991, 99, '2025-10-01 08:00:00', '2025-10-01 09:00:00', 'Room A', 'offline', 'student_request', 'completed', 'Bimbingan TA1'),
+(992, 99, '2025-10-02 08:00:00', '2025-10-02 09:00:00', 'Room A', 'offline', 'student_request', 'completed', 'Bimbingan TA1'),
+(993, 99, '2025-10-03 08:00:00', '2025-10-03 09:00:00', 'Room A', 'offline', 'student_request', 'completed', 'Bimbingan TA1'),
+(994, 99, '2025-10-04 08:00:00', '2025-10-04 09:00:00', 'Room B', 'offline', 'student_request', 'completed', 'Bimbingan TA2'),
+(995, 99, '2025-10-05 08:00:00', '2025-10-05 09:00:00', 'Room B', 'offline', 'student_request', 'completed', 'Bimbingan TA2'),
+(996, 99, '2025-10-06 08:00:00', '2025-10-06 09:00:00', 'Room B', 'offline', 'student_request', 'completed', 'Bimbingan TA2');
