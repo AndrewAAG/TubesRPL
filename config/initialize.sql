@@ -175,3 +175,71 @@ CREATE TABLE IF NOT EXISTS notifications (
     time_notified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
+-- DATA DUMMY
+-- 1. DATA SEMESTER 
+INSERT IGNORE   INTO semesters (semester_id, name, year, start_date, end_date, uts_start_date, uts_end_date, uas_start_date, uas_end_date, is_active) VALUES
+(1, 'Genap 2024/2025', 2024, '2025-01-15', '2025-06-15', '2025-03-10', '2025-03-24', '2025-06-01', '2025-06-14', FALSE),
+(2, 'Ganjil 2025/2026', 2025, '2025-08-15', '2025-12-15', '2025-10-20', '2025-10-31', '2025-12-01', '2025-12-14', TRUE);
+
+-- 2. USERS
+INSERT IGNORE INTO users (user_id, name, email, password, role) VALUES 
+(1, 'Dr. Koordinator TA', 'koor@unpar.ac.id', '123456', 'coordinator'),
+(2, 'Pascal Alfadian', 'pascal@unpar.ac.id', '123456', 'lecturer'),
+(3, 'Vania Natali', 'vania@unpar.ac.id', '123456', 'lecturer'),
+(4, 'Lionov', 'lionov@unpar.ac.id', '123456', 'lecturer'),
+(5, 'Andrew Alexander Gunawan', 'andrew@student.unpar.ac.id', '123456', 'student'),
+(6, 'Stevan Axel', 'stevan@student.unpar.ac.id', '123456', 'student'),
+(7, 'Cloud Althea', 'cloud@student.unpar.ac.id', '123456', 'student'),
+(8, 'Kevin Sanjaya', 'kevin@student.unpar.ac.id', '123456', 'student');
+
+-- 3. DETAIL USERS
+INSERT IGNORE INTO coordinators (user_id, nip) VALUES (1, 'KOOR001');
+INSERT IGNORE INTO lecturers (user_id, nip) VALUES (2, '19900101'), (3, '19900202'), (4, '19900303');
+INSERT IGNORE INTO students (user_id, npm, cohort_year) VALUES 
+(5, '6182301010', 2022), (6, '6182301040', 2022), (7, '6182301081', 2023), (8, '6182301022', 2021);
+
+-- 4. THESIS
+INSERT IGNORE INTO thesis (thesis_id, student_id, semester_id, title, stage_type) VALUES
+(1, 5, 2, 'Pengembangan Sistem Manajemen Bimbingan TA Berbasis Web', 'TA1'),
+(2, 6, 2, 'Analisis Sentimen Menggunakan Deep Learning', 'TA1'),
+(3, 7, 2, 'Implementasi Blockchain pada Supply Chain', 'TA1'),
+(4, 8, 2, 'Rancang Bangun IoT Smart Home', 'TA2');
+
+-- 5. PEMBIMBING
+INSERT IGNORE INTO thesis_supervisors (thesis_id, lecturer_id, role) VALUES 
+(1, 2, 'pembimbing_1'), (1, 3, 'pembimbing_2'), -- Andrew dibimbing Pascal & Vania
+(2, 4, 'pembimbing_1'),
+(4, 2, 'pembimbing_1');
+
+-- 6. JADWAL KULIAH MAHASISWA
+INSERT IGNORE INTO student_schedules (student_id, semester_id, day_of_week, start_time, end_time) VALUES
+(5, 2, 'Monday', '08:00:00', '10:00:00'),
+(5, 2, 'Wednesday', '13:00:00', '15:00:00');
+
+-- 7. KETERSEDIAAN DOSEN
+INSERT IGNORE INTO lecturer_schedules (lecturer_id, semester_id, day_of_week, start_time, end_time, description) VALUES
+(2, 2, 'Wednesday', '08:00:00', '12:00:00', 'Available Bimbingan di Ruang Dosen'),
+(2, 2, 'Friday', '13:00:00', '16:00:00', 'Available Online Only');
+
+-- 8. APPOINTMENTS 
+
+-- A. COMPLETED (Sudah selesai, ada notes)
+INSERT IGNORE INTO appointments (app_id, student_id, start_time, end_time, location, mode, origin, status, notes) 
+VALUES (101, 5, '2025-10-01 09:00:00', '2025-10-01 10:00:00', '09.01.21', 'offline', 'student_request', 'completed', 'Membahas Bab 1');
+INSERT IGNORE INTO appointment_lecturers VALUES (101, 2, 'accepted', NULL);
+INSERT IGNORE INTO session_notes (app_id, summary) VALUES (101, 'Revisi rumusan masalah.');
+
+-- B. APPROVED (Akan datang)
+INSERT IGNORE INTO appointments (app_id, student_id, start_time, end_time, location, mode, origin, status, notes) 
+VALUES (102, 5, '2025-10-08 08:00:00', '2025-10-08 10:00:00', '09.01.21', 'offline', 'student_request', 'approved', 'Diskusi Bab 2');
+INSERT IGNORE INTO appointment_lecturers VALUES (102, 2, 'accepted', NULL);
+
+-- C. PENDING (Menunggu konfirmasi)
+INSERT IGNORE INTO appointments (app_id, student_id, start_time, end_time, location, mode, origin, status, notes) 
+VALUES (103, 5, '2025-10-17 11:00:00', '2025-10-17 13:00:00', 'https://meet.google.com/ori-dead-yqs', 'online', 'student_request', 'pending', 'Membahas Metodologi');
+INSERT IGNORE INTO appointment_lecturers VALUES (103, 2, 'pending', NULL);
+
+-- 9. NOTIFIKASI
+INSERT IGNORE INTO notifications (user_id, title, content, is_read) VALUES
+(5, 'Jadwal Disetujui', 'Pengajuan bimbingan 8 Oktober disetujui.', FALSE);
