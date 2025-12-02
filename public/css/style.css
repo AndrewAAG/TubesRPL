@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+
+/* KUNCI 1: Matikan scroll pada Body utama */
+body, html {
+    height: 100%;
+    overflow: hidden; /* Mencegah scroll halaman global */
+    font-family: 'Open Sans', sans-serif;
+    background-color: #f5f7fa;
+}
+
+/* KUNCI 2: Sidebar Scrollable */
+.sidebar-scrollable {
+    background: linear-gradient(180deg, #2b95ff 0%, #0056b3 100%);
+    overflow-y: auto; /* Scroll jika konten panjang */
+    height: 100vh;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+    z-index: 10;
+    
+    /* Sembunyikan Scrollbar (Opsional, agar rapi) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE 10+ */
+}
+.sidebar-scrollable::-webkit-scrollbar { 
+    width: 0px; background: transparent; /* Chrome/Safari */
+}
+
+/* KUNCI 3: Main Content Scrollable */
+.main-content-scrollable {
+    height: 100vh;
+    overflow-y: auto; /* Scroll sendiri */
+    padding: 40px 50px; /* Padding isi konten */
+    background-color: #f5f7fa;
+}
+
+/* --- Komponen Visual Lainnya (Tetap Sama) --- */
+
+/* Profile Image */
+.profile-img {
+    width: 90px; height: 90px;
+    object-fit: cover;
+    border: 3px solid rgba(255,255,255,0.3);
+    margin-bottom: 10px;
+}
+
+/* Navigasi */
+.nav-custom { width: 100%; margin-top: 20px; }
+.nav-item-custom {
+    display: block; padding: 12px 30px;
+    color: rgba(255,255,255,0.8); text-decoration: none;
+    font-size: 0.95rem; border-left: 4px solid transparent;
+    transition: all 0.3s; font-weight: 500;
+}
+.nav-item-custom:hover { color: white; background: rgba(255,255,255,0.1); padding-left: 35px; }
+.nav-item-custom.active { background: rgba(255,255,255,0.2); color: white; border-left-color: white; font-weight: 700; }
+
+/* Kartu Jadwal */
+.card-schedule {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+    transition: transform 0.2s;
+}
+.card-schedule:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+
+/* Helpers Typography */
+.badge-pill-custom { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.08); padding: 8px 18px; border-radius: 30px; font-weight: 700; font-size: 0.8rem; color: #0d6efd; }
+.status-approved { background: #d1e7dd; color: #0f5132; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; }
+.status-pending { background: #fff3cd; color: #856404; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; }
+.label-text { font-size: 0.8rem; color: #999; margin-bottom: 5px; font-weight: 600; }
+.value-text { font-weight: 700; color: #333; font-size: 1rem; }
+.dashed-line { border-bottom: 2px dashed #eee; width: 100%; margin: 20px 0; }
+
+/* --- NOTIFIKASI BULAT SEMPURNA --- */
+.notification-circle {
+    width: 45px;        /* Lebar Tetap */
+    height: 45px;       /* Tinggi Tetap (Sama dengan Lebar = Bulat Sempurna) */
+    background-color: white;
+    border-radius: 50%; /* Membuat lingkaran */
+    
+    /* Menengahkan Ikon (Centering) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Efek Visual */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Shadow halus */
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.notification-circle:hover {
+    transform: scale(1.05); /* Sedikit membesar saat di-hover */
+}
+
+/* Badge Merah (Angka) */
+.badge-dot {
+    position: absolute;
+    top: -2px;     /* Atur posisi vertikal */
+    right: -2px;   /* Atur posisi horizontal */
+    
+    background-color: #dc3545; /* Merah */
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    
+    width: 20px;   /* Lebar & Tinggi sama agar bulat */
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #f5f7fa; /* Border putih/abu agar terpisah dari ikon */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
