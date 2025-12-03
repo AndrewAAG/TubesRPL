@@ -42,9 +42,6 @@ function initNotificationSystem() {
             if(overlay) {
                 overlay.style.display = 'flex'; // Tampilkan popup
                 fetchNotifications(currentUserId); // Ambil data terbaru
-                
-                // Hilangkan notifikasi merah (badge) saat dibuka
-                if(badge) badge.style.display = 'none';
             }
         });
     }
