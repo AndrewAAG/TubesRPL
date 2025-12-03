@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 // Untuk serve static fils
 app.use(express.static('public', { index: false, extensions: ['css', 'js', 'png', 'jpg'] }));
+// app.use(express.static(path.join(__dirname, 'public')));
 
 
 // ---------------- ROUTING ------------------
