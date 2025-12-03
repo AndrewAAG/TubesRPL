@@ -8,7 +8,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <style>
-        /* Calendar Specific Styles */
         .calendar-container {
             background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
             border-radius: 20px;
@@ -99,7 +98,17 @@
         }
 
         .event-booked {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            cursor: not-allowed;
+        }
+
+        .event-my-booking {
             background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        }
+
+        .event-unavailable {
+            background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+            cursor: not-allowed;
         }
 
         .event-time {
@@ -114,7 +123,7 @@
             opacity: 0.95;
         }
 
-        .event-date {
+        .event-lecturer {
             display: block;
             font-size: 10px;
             opacity: 0.9;
@@ -141,6 +150,28 @@
 
         .nav-btn:hover {
             background: #e7f1ff;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 13px;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
         }
 
         @media (max-width: 768px) {
@@ -180,13 +211,10 @@
 <body>
     <div class="container-fluid h-100">
         <div class="row h-100">
-            <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
 
-            <!-- Main Content -->
             <div class="col-md-9 col-lg-10 h-100 p-0 position-relative">
                 <div class="main-content-scrollable">
-                    <!-- Header -->
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
                             <h2 class="fw-bold text-primary mb-1">Kalender</h2>
@@ -205,7 +233,6 @@
                         </div>
                     </div>
 
-                    <!-- Calendar Container -->
                     <div class="calendar-container">
                         <div class="calendar-navigation">
                             <button class="nav-btn" onclick="previousWeek()">
@@ -218,7 +245,29 @@
                         </div>
 
                         <div class="calendar-grid" id="calendar-grid">
-                            <!-- Calendar will be rendered here -->
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-white" role="status"></div>
+                                <div class="mt-2 text-white small">Memuat kalender...</div>
+                            </div>
+                        </div>
+
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-box" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);"></div>
+                                <span>Tersedia</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-box" style="background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);"></div>
+                                <span>Booking Anda</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-box" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);"></div>
+                                <span>Sudah Dibooking</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-box" style="background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);"></div>
+                                <span>Tidak Tersedia</span>
+                            </div>
                         </div>
                     </div>
 
@@ -228,30 +277,93 @@
         </div>
     </div>
 
+    <!-- Modal Booking -->
+    <div class="modal fade" id="bookingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Booking Jadwal Bimbingan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tanggal & Waktu</label>
+                        <p id="modal-datetime" class="text-muted"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Dosen Pembimbing</label>
+                        <p id="modal-lecturer" class="text-muted"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="booking-mode" class="form-label fw-bold">Mode Bimbingan</label>
+                        <select class="form-select" id="booking-mode" onchange="toggleLocationInput()">
+                            <option value="offline">Offline (Ruangan)</option>
+                            <option value="online">Online (Link Meeting)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="location-container">
+                        <label for="booking-location" class="form-label fw-bold">Ruangan / Link Meeting</label>
+                        <input type="text" class="form-control" id="booking-location" placeholder="Contoh: Ruang 301">
+                    </div>
+                    <div class="mb-3">
+                        <label for="booking-notes" class="form-label fw-bold">Catatan (Opsional)</label>
+                        <textarea class="form-control" id="booking-notes" rows="3" placeholder="Topik yang ingin dibahas..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmBooking()">Booking Sekarang</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="sidebar.js"></script>
     <script>
-        // Data jadwal (nanti akan diambil dari API)
-        let currentWeekStart = new Date(2025, 9, 6); // 6 Oktober 2025
+        let currentWeekStart = new Date();
+        currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1);
+        let scheduleData = {};
+        let selectedSchedule = null;
+        const bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
 
-        const scheduleData = {
-            '2025-10-06': [
-                { time: '10.00 - 12.00', type: 'available', title: 'Available', lecturer: null }
-            ],
-            '2025-10-07': [
-                { time: '12.00 - 15.00', type: 'available', title: 'Available', lecturer: null }
-            ],
-            '2025-10-08': [
-                { time: '09.00 - 12.00', type: 'booked', title: 'Pascal Alfadian', date: '09.01.21', lecturer: 'Dr. John Doe' }
-            ]
-        };
+        async function fetchCalendarData() {
+            const grid = document.getElementById('calendar-grid');
+            const userSession = JSON.parse(localStorage.getItem('user_session'));
+
+            if (!userSession || !userSession.user_id) {
+                alert('Sesi habis, silakan login kembali.');
+                window.location.href = '../login.html';
+                return;
+            }
+
+            const weekEnd = new Date(currentWeekStart);
+            weekEnd.setDate(weekEnd.getDate() + 4);
+
+            const startDate = currentWeekStart.toISOString().split('T')[0];
+            const endDate = weekEnd.toISOString().split('T')[0];
+
+            try {
+                const response = await fetch(`/api/schedules/calendar/${userSession.user_id}?start_date=${startDate}&end_date=${endDate}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    scheduleData = result.data;
+                    renderCalendar();
+                } else {
+                    grid.innerHTML = `<div class="text-center text-white py-5">${result.message}</div>`;
+                }
+            } catch (error) {
+                console.error('Error fetching calendar:', error);
+                grid.innerHTML = `<div class="text-center text-white py-5">Gagal terhubung ke server.</div>`;
+            }
+        }
 
         function renderCalendar() {
             const grid = document.getElementById('calendar-grid');
             const monthYear = currentWeekStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
             document.getElementById('current-month').textContent = monthYear;
 
-            // Generate week dates
             const weekDates = [];
             for (let i = 0; i < 5; i++) {
                 const date = new Date(currentWeekStart);
@@ -264,7 +376,6 @@
 
             let html = '<div class="week-header"><div class="day-header"></div>';
             
-            // Header hari
             weekDates.forEach((date, i) => {
                 html += `
                     <div class="day-header">
@@ -275,7 +386,6 @@
             });
             html += '</div>';
 
-            // Time grid
             html += '<div class="time-grid">';
             timeSlots.forEach(time => {
                 html += `<div class="time-label">${time}</div>`;
@@ -286,17 +396,17 @@
                     
                     html += '<div class="day-cell">';
                     
-                    // Render events untuk tanggal ini
                     events.forEach(event => {
-                        if (event.time.startsWith(time.substring(0, 5))) {
+                        if (event.start_time.startsWith(time.substring(0, 2))) {
                             const duration = calculateDuration(event.time);
-                            const eventClass = event.type === 'available' ? 'event-available' : 'event-booked';
+                            const eventClass = `event-${event.type}`;
+                            const clickable = event.type === 'available' ? `onclick="openBookingModal('${dateStr}', '${event.schedule_id}')"` : '';
                             
                             html += `
-                                <div class="event ${eventClass}" style="height: ${duration}px;" onclick="handleEventClick('${dateStr}', '${event.time}')">
+                                <div class="event ${eventClass}" style="height: ${duration}px;" ${clickable}>
                                     <span class="event-time">${event.time}</span>
                                     <span class="event-title">${event.title}</span>
-                                    ${event.date ? `<span class="event-date">${event.date}</span>` : ''}
+                                    ${event.lecturer ? `<span class="event-lecturer">${event.lecturer}</span>` : ''}
                                 </div>
                             `;
                         }
@@ -315,45 +425,110 @@
             const [startHour] = start.split('.').map(Number);
             const [endHour] = end.split('.').map(Number);
             const duration = endHour - startHour;
-            return duration * 60; // 60px per jam
+            return duration * 60;
         }
 
-        function handleEventClick(date, time) {
-            const event = scheduleData[date]?.find(e => e.time === time);
-            if (event && event.type === 'available') {
-                if (confirm(`Apakah Anda ingin memesan slot ${time} pada tanggal ${date}?`)) {
-                    // Di sini nanti akan memanggil API untuk booking
-                    alert('Fitur booking akan segera tersedia!');
+        function openBookingModal(date, scheduleId) {
+            const events = scheduleData[date];
+            const event = events.find(e => e.schedule_id == scheduleId);
+            
+            if (!event || event.type !== 'available') return;
+
+            selectedSchedule = {
+                schedule_id: scheduleId,
+                lecturer_sched_id: event.lecturer_sched_id,
+                lecturer_id: event.lecturer_id,
+                date: date,
+                time: event.time,
+                lecturer: event.lecturer
+            };
+
+            const dateObj = new Date(date);
+            const formattedDate = dateObj.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            document.getElementById('modal-datetime').textContent = `${formattedDate}, ${event.time}`;
+            document.getElementById('modal-lecturer').textContent = event.lecturer || 'Belum ditentukan';
+            document.getElementById('booking-notes').value = '';
+            document.getElementById('booking-mode').value = 'offline';
+            document.getElementById('booking-location').value = '';
+            toggleLocationInput();
+
+            bookingModal.show();
+        }
+
+        function toggleLocationInput() {
+            const mode = document.getElementById('booking-mode').value;
+            const locationInput = document.getElementById('booking-location');
+            
+            if (mode === 'online') {
+                locationInput.placeholder = 'Contoh: https://meet.google.com/abc-defg-hij';
+            } else {
+                locationInput.placeholder = 'Contoh: Ruang 301';
+            }
+        }
+
+        async function confirmBooking() {
+            const userSession = JSON.parse(localStorage.getItem('user_session'));
+            const notes = document.getElementById('booking-notes').value;
+            const mode = document.getElementById('booking-mode').value;
+            const location = document.getElementById('booking-location').value;
+
+            if (!location) {
+                alert('Harap isi ruangan atau link meeting!');
+                return;
+            }
+
+            const bookingData = {
+                lecturer_sched_id: selectedSchedule.lecturer_sched_id,
+                student_id: userSession.user_id,
+                date: selectedSchedule.date,
+                mode: mode,
+                location: location,
+                notes: notes
+            };
+
+            try {
+                const response = await fetch('/api/schedules/book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookingData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Booking berhasil! Menunggu konfirmasi dosen.');
+                    bookingModal.hide();
+                    fetchCalendarData();
+                } else {
+                    alert(result.message || 'Booking gagal!');
                 }
+            } catch (error) {
+                console.error('Error booking:', error);
+                alert('Gagal terhubung ke server.');
             }
         }
 
         function previousWeek() {
             currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-            renderCalendar();
+            fetchCalendarData();
         }
 
         function nextWeek() {
             currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-            renderCalendar();
+            fetchCalendarData();
         }
 
-        // Render saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
-            renderCalendar();
+            fetchCalendarData();
         });
-
-        // Fungsi untuk fetch data dari API (akan diimplementasikan nanti)
-        async function fetchCalendarData() {
-            try {
-                const userSession = JSON.parse(localStorage.getItem('user_session'));
-                // const response = await fetch(`/api/schedules/calendar/${userSession.user_id}`);
-                // const result = await response.json();
-                // Update scheduleData dengan data dari API
-            } catch (error) {
-                console.error('Error fetching calendar data:', error);
-            }
-        }
     </script>
 </body>
 </html>

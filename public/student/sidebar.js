@@ -27,7 +27,7 @@ function renderSidebar() {
             <small class="text-white-50 text-uppercase fw-bold ps-4 mb-2 d-block" 
                    style="font-size: 0.7rem;">Penjadwalan</small>
             
-            <a class="nav-item-custom" href="/student/schedule">
+            <a class="nav-item-custom" href="student_schedule.html">
                 <i class="fas fa-calendar-alt me-3 text-center" style="width: 20px;"></i> 
                 Jadwal Bimbingan
             </a>
@@ -37,8 +37,8 @@ function renderSidebar() {
                 Pelacak Kemajuan
             </a>
 
-            <!-- Perbaikan LINK ke halaman Kalender -->
-            <a class="nav-item-custom" href="/student/calendar">
+            <!-- Link ke halaman Kalender (PERBAIKAN DI SINI) -->
+            <a class="nav-item-custom" href="calendar.html">
                 <i class="far fa-calendar me-3 text-center" style="width: 20px;"></i> 
                 Kalender
             </a>
