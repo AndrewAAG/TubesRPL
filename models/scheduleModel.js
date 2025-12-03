@@ -72,6 +72,81 @@ class ScheduleModel {
             throw error;
         }
     }
+
+   // AMBIL REQUEST PENDING
+    static async getPendingByLecturer(lecturerId) {
+        try {
+            // Kita JOIN ke users untuk dapat nama mahasiswa & npm
+            // Kita JOIN ke thesis untuk dapat info TA1/TA2 (jika ada tabel thesis)
+            const query = `
+                SELECT 
+                    a.app_id as id,
+                    a.start_time,
+                    a.end_time,
+                    a.location,
+                    a.mode,
+                    a.status,
+                    a.notes as topic,
+                    u.name as student_name,
+                    s.npm,
+                    t.stage_type -- (Asumsi tabel thesis berelasi, jika tidak null)
+                FROM appointments a
+                JOIN appointment_lecturers al ON a.app_id = al.app_id
+                JOIN students s ON a.student_id = s.user_id
+                JOIN users u ON s.user_id = u.user_id
+                LEFT JOIN thesis t ON t.student_id = s.user_id -- Optional Join
+                WHERE al.lecturer_id = ? 
+                AND a.status = 'pending' 
+                AND a.is_deleted = FALSE
+                ORDER BY a.start_time ASC
+            `;
+            const [rows] = await db.execute(query, [lecturerId]);
+            return rows;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // UPDATE STATUS (APPROVE/REJECT)
+    static async updateStatus(appId, status, notes = null) {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        try {
+            // 1. Update tabel utama (appointments)
+            let queryApp = `UPDATE appointments SET status = ? WHERE app_id = ?`;
+            let paramsApp = [status, appId];
+            
+            // Jika reject, kita simpan alasannya di notes
+            if (status === 'rejected' && notes) {
+                // Append alasan ke notes yang sudah ada
+                queryApp = `
+                    UPDATE appointments 
+                    SET status = ?, 
+                        notes = CONCAT(IFNULL(notes, ''), ' [Ditolak: ', ?, ']') 
+                    WHERE app_id = ?`;
+                paramsApp = [status, notes, appId];
+            }
+            
+            await connection.execute(queryApp, paramsApp);
+
+            // 2. Update tabel pivot (appointment_lecturers)
+            // Agar sinkron antara status global dan status respon dosen
+            let lecturerStatus = 'pending';
+            if (status === 'approved') lecturerStatus = 'accepted';
+            if (status === 'rejected') lecturerStatus = 'rejected';
+
+            const queryPivot = `UPDATE appointment_lecturers SET response_status = ? WHERE app_id = ?`;
+            await connection.execute(queryPivot, [lecturerStatus, appId]);
+
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
 }
 
 module.exports = ScheduleModel;

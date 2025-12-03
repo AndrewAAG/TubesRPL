@@ -88,6 +88,55 @@ exports.rescheduleAppointment = async (req, res) => {
     }
 };
 
+exports.getPendingRequests = async (req, res) => {
+    const { lecturerId } = req.params;
+    try {
+        const requests = await ScheduleModel.getPendingByLecturer(lecturerId);
+        
+        // Format data agar enak dibaca Frontend
+        const formattedData = requests.map(item => {
+            const startDate = new Date(item.start_time);
+            const endDate = new Date(item.end_time);
+            
+            // Format: "Rabu, 8 Oktober 2025"
+            const dateStr = startDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            // Format: "10.00 - 11.00"
+            const timeStr = `${startDate.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${endDate.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}`;
+
+            return {
+                id: item.id,
+                student_name: item.student_name,
+                npm: item.npm,
+                date_formatted: dateStr,
+                time_formatted: timeStr.replace(/\./g, '.'), // pastikan format titik
+                topic: item.topic,
+                location: item.location,
+                mode: item.mode === 'online' ? 'Online' : 'On Site',
+                stage: item.stage_type || 'TA' // Default jika null
+            };
+        });
+
+        res.json({ success: true, data: formattedData });
+    } catch (error) {
+        console.error("Error pending requests:", error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+exports.respondToRequest = async (req, res) => {
+    const { id } = req.params; 
+    const { action, reason } = req.body; // action: 'approve' atau 'reject'
+
+    try {
+        const status = action === 'approve' ? 'approved' : 'rejected';
+        await ScheduleModel.updateStatus(id, status, reason);
+        res.json({ success: true, message: `Berhasil di-${action}` });
+    } catch (error) {
+        console.error("Error respond:", error);
+        res.status(500).json({ success: false, message: 'Gagal memproses.' });
+    }
+};
+
 // Translate status DB ke Bahasa Indonesia
 function mapStatusToLabel(status) {
     switch (status) {
