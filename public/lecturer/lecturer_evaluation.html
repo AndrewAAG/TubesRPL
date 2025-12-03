@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluasi Bimbingan - Dosen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
+
+        <div class="col-md-9 col-lg-10 h-100 p-0 position-relative bg-light">
+            <div class="main-content-scrollable">
+                
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <div>
+                        <h2 class="fw-bold text-primary mb-1">Riwayat Bimbingan</h2>
+                        <p class="text-muted small">Daftar bimbingan yang telah selesai (Completed)</p>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                             <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                        <div class="notification-circle">
+                            <i class="fas fa-bell fa-lg text-secondary"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                        <p class="text-muted small mb-1">Hari ini</p>
+                        <h5 class="fw-bold" id="currentDateDisplay">-</h5>
+                    </div>
+                    
+                    <div>
+                        <select id="studentFilter" class="form-select border-0 shadow-sm rounded-pill px-4 py-2 text-primary fw-bold" style="width: 250px; cursor: pointer;">
+                            <option value="all">Semua Mahasiswa</option>
+                            </select>
+                    </div>
+                </div>
+
+                <div id="evaluation-container">
+                    </div>
+
+                <div style="height: 50px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/sidebar.js"></script>
+</script> 
+    
+<script>
+    let allHistory = [];
+    let currentLecturerId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const userSession = JSON.parse(localStorage.getItem('user_session'));
+        if (!userSession || userSession.role !== 'lecturer') {
+            window.location.href = '/login'; return;
+        }
+        currentLecturerId = userSession.user_id;
+
+        fetchMyStudents(); // Isi dropdown filter (Reuse logic dari request page)
+        fetchHistory();    // Ambil data history
+
+        document.getElementById('studentFilter').addEventListener('change', (e) => {
+            filterHistory(e.target.value);
+        });
+    });
+
+    async function fetchHistory() {
+        const container = document.getElementById("evaluation-container");
+        container.innerHTML = '<div class="text-center py-5 spinner-border text-primary"></div>';
+
+        try {
+            const response = await fetch(`/api/evaluations/lecturer/${currentLecturerId}`);
+            const result = await response.json();
+
+            if (result.success) {
+                allHistory = result.data;
+                renderHistory(allHistory);
+            } else {
+                container.innerHTML = `<p class="text-danger text-center">${result.message}</p>`;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function renderHistory(data) {
+        const container = document.getElementById("evaluation-container");
+        
+        if (data.length === 0) {
+            container.innerHTML = `<div class="text-center py-5 text-muted">Belum ada bimbingan yang selesai.</div>`;
+            return;
+        }
+
+        let html = "";
+        data.forEach(item => {
+            const locationDisplay = item.mode === 'Online' ? 'Link Meeting' : 'Ruangan';
+            
+            // Perbedaan dengan Student: Di sini kita menampilkan NAMA MAHASISWA
+            html += `
+            <div class="card-schedule">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <span class="badge-pill-custom">${item.mode}</span>
+                    <span class="status-approved px-3 py-1 rounded-pill small fw-bold">Selesai</span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="label-text">Tanggal dan Waktu</div>
+                        <div class="value-text fs-5 mb-1">${item.date}</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <div class="label-text">Mahasiswa</div>
+                        <div class="value-text text-primary">${item.student_name}</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <div class="label-text">${locationDisplay}</div>
+                        <div class="value-text text-truncate">${item.location || '-'}</div>
+                    </div>
+                </div>
+
+                <div class="row mt-2">
+                    <div class="col-12 text-end">
+                        <a href="/lecturer/evaluation/detail?id=${item.id}" class="btn btn-primary-custom rounded-pill px-5 fw-bold shadow-sm">
+                            Result
+                        </a>
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // Reuse Logic Filter Mahasiswa (Sama seperti di lecturer_requests.js)
+    async function fetchMyStudents() {
+        try {
+            const response = await fetch(`/api/lecturer/students/${currentLecturerId}`);
+            const result = await response.json();
+            const select = document.getElementById('studentFilter');
+            if (result.success) {
+                result.data.forEach(student => {
+                    const opt = document.createElement('option');
+                    opt.value = student.npm; 
+                    opt.textContent = student.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch(e) {}
+    }
+
+    function filterHistory(npm) {
+        if (npm === 'all') renderHistory(allHistory);
+        else renderHistory(allHistory.filter(i => i.npm === npm));
+    }
+    
+    // Utils sederhana
+    document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+</script>
+</body>
+</html>

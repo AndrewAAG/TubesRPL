@@ -29,7 +29,7 @@ function renderSidebar() {
             <a class="nav-item-custom ${isActive('lecturer/requests')}" href="/lecturer/requests">
                 <i class="fas fa-envelope-open-text me-3 text-center" style="width: 20px;"></i> Pengajuan Bimbingan
             </a>
-            <a class="nav-item-custom ${isActive('lecturer/evaluation')}" href="#">
+            <a class="nav-item-custom ${isActive('lecturer/evaluation')}" href="/lecturer/evaluation">
                 <i class="fas fa-file-signature me-3 text-center" style="width: 20px;"></i> Evaluasi Bimbingan
             </a>
 
