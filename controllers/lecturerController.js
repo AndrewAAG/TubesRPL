@@ -81,3 +81,43 @@ exports.respondToRequest = async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal memproses request' });
     }
 };
+
+exports.getStudentList = async (req, res) => {
+    try {
+        const { lecturerId } = req.params;
+        const students = await LecturerModel.getSupervisedStudents(lecturerId);
+
+        const formattedData = students.map(s => {
+            // 1. Format Tanggal
+            let lastDate = '-';
+            if (s.last_mentoring) {
+                lastDate = new Date(s.last_mentoring).toLocaleDateString('id-ID', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+            }
+
+            // 2. Logic Status Kelayakan (Sederhana)
+            // Rule: TA1 butuh min 4x, TA2 butuh min 6x (sesuai requirement awal)
+            let isEligible = false;
+            let minReq = s.stage_type === 'TA2' ? 6 : 4;
+            
+            if (s.total_count >= minReq) isEligible = true;
+
+            return {
+                student_id: s.student_id,
+                name: s.name,
+                npm: s.npm,
+                stage: s.stage_type, // TA1 atau TA2
+                last_mentoring: lastDate,
+                total_count: s.total_count,
+                status_label: isEligible ? 'Memenuhi Syarat' : 'Belum Memenuhi',
+                status_class: isEligible ? 'status-approved' : 'status-pending' // Hijau vs Kuning
+            };
+        });
+
+        res.json({ success: true, data: formattedData });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};

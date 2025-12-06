@@ -49,6 +49,35 @@ class LecturerModel {
             return rows;
         } catch (error) { throw error; }
     }
+
+    // Ambil daftar mahasiswa bimbingan beserta statistik bimbingannya
+    static async getSupervisedStudents(lecturerId) {
+        const query = `
+            SELECT 
+                s.user_id as student_id,
+                s.npm,
+                u.name,
+                t.stage_type,
+                -- Subquery untuk tanggal bimbingan terakhir (Completed only)
+                (SELECT MAX(start_time) 
+                 FROM appointments 
+                 WHERE student_id = s.user_id AND status = 'completed') as last_mentoring,
+                 
+                -- Subquery untuk hitung total bimbingan (Completed only)
+                (SELECT COUNT(*) 
+                 FROM appointments 
+                 WHERE student_id = s.user_id AND status = 'completed') as total_count
+            
+            FROM thesis_supervisors ts
+            JOIN thesis t ON ts.thesis_id = t.thesis_id
+            JOIN students s ON t.student_id = s.user_id
+            JOIN users u ON s.user_id = u.user_id
+            WHERE ts.lecturer_id = ?
+        `;
+        
+        const [rows] = await db.execute(query, [lecturerId]);
+        return rows;
+    }
 }
 
 module.exports = LecturerModel;

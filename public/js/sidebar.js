@@ -36,7 +36,7 @@ function renderSidebar() {
             <div class="mt-4"></div>
             <small class="text-white-50 text-uppercase fw-bold ps-4 mb-2 d-block" style="font-size: 0.7rem;">Mahasiswa Bimbingan</small>
             
-            <a class="nav-item-custom ${isActive('lecturer/students')}" href="#">
+            <a class="nav-item-custom ${isActive('lecturer/students')}" href="/lecturer/students">
                 <i class="fas fa-users me-3 text-center" style="width: 20px;"></i> Daftar Mahasiswa
             </a>
         `;

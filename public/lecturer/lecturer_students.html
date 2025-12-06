@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Daftar Mahasiswa - Dosen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+      /* Styling khusus Card Mahasiswa sesuai Screenshot */
+      .student-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        border: none;
+        transition: transform 0.2s;
+      }
+      .student-card:hover {
+        transform: translateY(-3px);
+      }
+
+      .st-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #000;
+        margin-bottom: 2px;
+      }
+      .st-npm {
+        font-size: 0.9rem;
+        color: #888;
+        font-weight: 400;
+        margin-bottom: 15px;
+      }
+
+      .label-sm {
+        font-size: 0.8rem;
+        color: #888;
+        margin-bottom: 4px;
+      }
+      .value-md {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #000;
+      }
+
+      .stage-badge {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #000;
+      }
+
+      /* Tombol Detail Biru */
+      .btn-detail-blue {
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 10px 30px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+      }
+      .btn-detail-blue:hover {
+        background-color: #3367d6;
+        color: white;
+        box-shadow: 0 4px 10px rgba(66, 133, 244, 0.3);
+      }
+
+      /* Status Badge Override */
+      .badge-status-ok {
+        background-color: #d1e7dd; /* Hijau Soft */
+        color: #0f5132; /* Hijau Gelap */
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-block;
+        border: 1px solid #badbcc;
+      }
+
+      /* Kuning/Orange untuk Belum Memenuhi */
+      .badge-status-warning {
+        background-color: #fff3cd; /* Kuning Soft */
+        color: #856404; /* Coklat/Kuning Gelap */
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-block;
+        border: 1px solid #ffeeba;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid h-100">
+      <div class="row h-100">
+        <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
+
+        <div class="col-md-9 col-lg-10 h-100 p-0 position-relative bg-light">
+          <div class="main-content-scrollable">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+              <h2 class="fw-bold text-primary mb-1">Daftar Mahasiswa</h2>
+
+              <div class="d-flex align-items-center gap-3">
+                <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <div class="notification-circle">
+                  <i class="fas fa-bell fa-lg text-secondary"></i>
+                </div>
+              </div>
+            </div>
+
+            <div id="students-container">
+              <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Memuat data mahasiswa...</p>
+              </div>
+            </div>
+
+            <div style="height: 50px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // 1. Cek Sesi
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        if (!userSession || userSession.role !== "lecturer") {
+          window.location.href = "/login";
+          return;
+        }
+
+        // 2. Fetch Data
+        fetchStudents(userSession.user_id);
+      });
+
+      async function fetchStudents(lecturerId) {
+        const container = document.getElementById("students-container");
+
+        try {
+          const response = await fetch(`/api/lecturer/students-list/${lecturerId}`);
+          const result = await response.json();
+
+          if (result.success) {
+            renderStudents(result.data, container);
+          } else {
+            container.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+          }
+        } catch (error) {
+          console.error(error);
+          container.innerHTML = `<div class="text-center text-danger">Gagal terhubung ke server.</div>`;
+        }
+      }
+
+      function renderStudents(data, container) {
+        if (data.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-5 opacity-50">
+                <i class="fas fa-users fa-3x mb-3 text-secondary"></i>
+                <p>Belum ada mahasiswa bimbingan.</p>
+            </div>`;
+          return;
+        }
+
+        let html = "";
+        data.forEach((s) => {
+          // --- PERBAIKAN LOGIC WARNA BADGE ---
+
+          // Cek apakah status PERSIS "Memenuhi Syarat"
+          let badgeClass = "";
+
+          if (s.status_label === "Memenuhi Syarat") {
+            badgeClass = "badge-status-ok"; // Hijau
+          } else {
+            badgeClass = "badge-status-warning"; // Kuning (Belum Memenuhi)
+          }
+
+          html += `
+        <div class="student-card">
+            <div class="row align-items-center">
+                
+                <div class="col-md-5">
+                    <div class="st-name">${s.name}</div>
+                    <div class="st-npm">NPM: ${s.npm}</div>
+
+                    <div class="mb-3">
+                        <div class="label-sm">Bimbingan Terakhir</div>
+                        <div class="value-md">${s.last_mentoring}</div>
+                    </div>
+
+                    <div>
+                        <div class="label-sm mb-1">Status Kepatuhan</div>
+                        <div class="${badgeClass}">
+                            ${s.status_label}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 text-md-center my-3 my-md-0">
+                    <div class="label-sm">Tahap</div>
+                    <div class="stage-badge">${s.stage}</div>
+                </div>
+
+                <div class="col-md-3 text-md-end">
+                    <button class="btn-detail-blue shadow-sm" onclick="goToDetail('${s.student_id}')">
+                        Detail
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function goToDetail(studentId) {
+        // Arahkan ke halaman detail progress dengan query parameter ID
+        window.location.href = `/lecturer/student-progress?id=${studentId}`;
+      }
+
+      function logout() {
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+    </script>
+  </body>
+</html>

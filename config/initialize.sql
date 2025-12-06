@@ -210,7 +210,8 @@ INSERT IGNORE INTO thesis (thesis_id, student_id, semester_id, title, stage_type
 INSERT IGNORE INTO thesis_supervisors (thesis_id, lecturer_id, role) VALUES 
 (1, 2, 'pembimbing_1'), (1, 3, 'pembimbing_2'), -- Andrew dibimbing Pascal & Vania
 (2, 4, 'pembimbing_1'),
-(4, 2, 'pembimbing_1');
+(4, 2, 'pembimbing_1'),
+(5, 2, 'pembimbing_1');
 
 -- 6. JADWAL KULIAH MAHASISWA
 INSERT IGNORE INTO student_schedules (student_id, semester_id, day_of_week, start_time, end_time) VALUES
