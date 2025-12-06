@@ -8,6 +8,7 @@ const scheduleRoutes = require('./routes/schedule');
 const progressRoutes = require('./routes/progress');
 const evaluationRoutes = require('./routes/evaluation');
 const lecturerRoutes = require('./routes/lecturer');
+const coordinatorRoutes = require('./routes/coordinator');
 
 // Middleware
 app.use(cors());
@@ -25,6 +26,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use("/api/progress", progressRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/lecturer', lecturerRoutes);
+app.use('/api/coordinator', coordinatorRoutes);
 
 // Frontend Page Routs (HTML)
 app.use('/', pageRoutes);

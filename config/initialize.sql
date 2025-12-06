@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS semesters (
     uts_end_date DATE,
     uas_start_date DATE,
     uas_end_date DATE,
+    min_ta1 INT DEFAULT 4,
+    min_ta2 INT DEFAULT 6,
     is_active BOOLEAN DEFAULT FALSE
 );
 

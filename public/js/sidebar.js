@@ -3,7 +3,7 @@
 function renderSidebar() {
     // Ambil data user dari session
     const userSession = JSON.parse(localStorage.getItem('user_session')) || { 
-        name: 'User', role: 'student', npm: 'NPM' 
+        name: 'User', role: 'student', npm: 'NPM'
     };
 
     const role = userSession.role; // 'student' atau 'lecturer'
@@ -38,6 +38,31 @@ function renderSidebar() {
             
             <a class="nav-item-custom ${isActive('lecturer/students')}" href="/lecturer/students">
                 <i class="fas fa-users me-3 text-center" style="width: 20px;"></i> Daftar Mahasiswa
+            </a>
+        `;
+    } else if (role === 'coordinator') {
+        //userIdentity = userSession.nip || 'NIP Coordinator';
+        // userRoleLabel = 'Informatika';
+
+        menuHTML = `
+            <small class="text-white-50 text-uppercase fw-bold ps-4 mb-2 d-block" style="font-size: 0.7rem;">Penjadwalan</small>
+            
+            <a class="nav-item-custom ${isActive('coordinator/schedule')}" href="/coordinator/schedule">
+                <i class="fas fa-calendar-check me-3 text-center" style="width: 20px;"></i> Manajemen Semester
+            </a>
+            </a>
+            <a class="nav-item-custom ${isActive('coordinator/import')}" href="#">
+                <i class="fas fa-file-import me-3 text-center" style="width: 20px;"></i> Import Jadwal
+            </a>
+            <a class="nav-item-custom ${isActive('coordinator/assignments')}" href="/coordinator/assignments">
+                <i class="fas fa-clipboard-list me-3 text-center" style="width: 20px;"></i> Penetapan Bimbingan
+            </a>
+
+            <div class="mt-4"></div>
+            <small class="text-white-50 text-uppercase fw-bold ps-4 mb-2 d-block" style="font-size: 0.7rem;">Monitor</small>
+            
+            <a class="nav-item-custom ${isActive('coordinator/students')}" href="#">
+                <i class="fas fa-users me-3 text-center" style="width: 20px;"></i> Mahasiswa
             </a>
         `;
     } else {

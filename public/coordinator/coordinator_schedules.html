@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manajemen Semester - Koordinator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+      /* Table Styling yang Konsisten */
+      .table-custom th {
+        font-weight: 600;
+        color: #6c757d;
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #e9ecef;
+        padding: 15px;
+      }
+      .table-custom td {
+        vertical-align: middle;
+        padding: 15px;
+        color: #333;
+      }
+      .table-hover tbody tr:hover {
+        background-color: #f1f5f9;
+      }
+      .btn-icon {
+        width: 35px;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: none;
+        transition: 0.2s;
+      }
+      .btn-icon:hover {
+        background-color: #e9ecef;
+      }
+      .btn-edit {
+        color: #0d6efd;
+      }
+      .btn-delete {
+        color: #dc3545;
+      }
+
+      /* Status Toggle Style */
+      .form-switch .form-check-input {
+        width: 3em;
+        height: 1.5em;
+        cursor: pointer;
+      }
+      .form-switch .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid h-100">
+      <div class="row h-100">
+        <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
+
+        <div class="col-md-9 col-lg-10 h-100 p-0 position-relative bg-light">
+          <div class="main-content-scrollable">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+              <div>
+                <h2 class="fw-bold text-primary mb-1">Manajemen Semester</h2>
+                <p class="text-muted small">Kelola periode akademik dan aturan bimbingan.</p>
+              </div>
+
+              <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-primary-custom rounded-pill px-4 shadow-sm" onclick="openModal()"><i class="fas fa-plus me-2"></i> Tambah Semester</button>
+                <div class="notification-circle">
+                  <i class="fas fa-bell fa-lg text-secondary"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-standard p-0 overflow-hidden border-0 shadow-sm">
+              <div class="table-responsive">
+                <table class="table table-hover table-custom mb-0">
+                  <thead>
+                    <tr>
+                      <th>Nama Semester</th>
+                      <th>Tahun</th>
+                      <th>Periode Kuliah</th>
+                      <th class="text-center">Min. Bimbingan</th>
+                      <th class="text-center">Status Aktif</th>
+                      <th class="text-end">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="semester-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style="height: 50px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="semesterModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px">
+          <div class="modal-header border-0 pb-0 pt-4 px-4">
+            <h5 class="modal-title fw-bold text-primary" id="modalTitle">Setup Semester Baru</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <form id="semesterForm">
+              <input type="hidden" id="semId" />
+
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <label class="form-label small fw-bold text-secondary">Nama Semester</label>
+                  <input type="text" id="semName" class="form-control rounded-pill bg-light border-0 px-3" placeholder="Contoh: Ganjil 2025/2026" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-bold text-secondary">Tahun Angkatan</label>
+                  <input type="number" id="semYear" class="form-control rounded-pill bg-light border-0 px-3" placeholder="2025" required />
+                </div>
+              </div>
+
+              <hr class="dashed-line my-4" />
+
+              <h6 class="fw-bold text-dark mb-3"><i class="far fa-calendar-alt me-2 text-primary"></i>Periode Perkuliahan</h6>
+              <div class="row mb-3">
+                <div class="col-6">
+                  <label class="small text-muted">Tanggal Mulai</label>
+                  <input type="date" id="startDate" class="form-control rounded-pill border-0 shadow-sm" required />
+                </div>
+                <div class="col-6">
+                  <label class="small text-muted">Tanggal Selesai</label>
+                  <input type="date" id="endDate" class="form-control rounded-pill border-0 shadow-sm" required />
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded-4">
+                    <h6 class="small fw-bold mb-2 text-warning-emphasis">Periode UTS</h6>
+                    <div class="d-flex gap-2">
+                      <input type="date" id="utsStart" class="form-control form-control-sm border-0" required />
+                      <span class="align-self-center">-</span>
+                      <input type="date" id="utsEnd" class="form-control form-control-sm border-0" required />
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded-4">
+                    <h6 class="small fw-bold mb-2 text-primary-emphasis">Periode UAS</h6>
+                    <div class="d-flex gap-2">
+                      <input type="date" id="uasStart" class="form-control form-control-sm border-0" required />
+                      <span class="align-self-center">-</span>
+                      <input type="date" id="uasEnd" class="form-control form-control-sm border-0" required />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h6 class="fw-bold text-dark mb-3 mt-4"><i class="fas fa-cogs me-2 text-primary"></i>Konfigurasi Bimbingan</h6>
+              <div class="row mb-4 align-items-center">
+                <div class="col-md-4">
+                  <label class="small text-muted d-block">Min. Bimbingan TA1</label>
+                  <input type="number" id="minTa1" class="form-control rounded-pill border-0 shadow-sm" value="4" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="small text-muted d-block">Min. Bimbingan TA2</label>
+                  <input type="number" id="minTa2" class="form-control rounded-pill border-0 shadow-sm" value="6" required />
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check form-switch pt-3 ps-5">
+                    <input class="form-check-input" type="checkbox" id="isActiveCheck" />
+                    <label class="form-check-label fw-bold small ms-2 pt-1" for="isActiveCheck">Set Aktif</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary-custom rounded-pill py-2 fw-bold">Simpan Data Semester</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar.js"></script>
+    <script>
+      let allSemesters = [];
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // 1. Cek Sesi
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        if (!userSession || userSession.role !== "coordinator") {
+          window.location.href = "/login";
+          return;
+        }
+
+        // 2. Load Data
+        fetchSemesters();
+
+        // 3. Form Listener
+        document.getElementById("semesterForm").addEventListener("submit", handleSave);
+      });
+
+      async function fetchSemesters() {
+        const tbody = document.getElementById("semester-table-body");
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+
+        try {
+          const res = await fetch("/api/coordinator/semesters");
+          const result = await res.json();
+
+          if (result.success) {
+            allSemesters = result.data;
+            renderTable(result.data);
+          } else {
+            alert(result.message);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function renderTable(data) {
+        const tbody = document.getElementById("semester-table-body");
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">Belum ada data semester.</td></tr>';
+          return;
+        }
+
+        let html = "";
+        data.forEach((s) => {
+          // Status Badge
+          const activeSwitch = s.is_active
+            ? `<span class="badge bg-success rounded-pill px-3">Aktif</span>`
+            : `<button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-0" style="font-size:0.8rem" onclick="setActive(${s.semester_id})">Set Aktif</button>`;
+
+          html += `
+        <tr>
+            <td>
+                <div class="fw-bold text-dark">${s.name}</div>
+            </td>
+            <td>${s.year}</td>
+            <td>
+                <div class="small text-muted">${s.period_display}</div>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-light text-dark border">TA1: ${s.min_ta1}</span>
+                <span class="badge bg-light text-dark border ms-1">TA2: ${s.min_ta2}</span>
+            </td>
+            <td class="text-center">${activeSwitch}</td>
+            <td class="text-end">
+                <button class="btn-icon btn-edit me-1" onclick="openModal(${s.semester_id})">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button class="btn-icon btn-delete" onclick="deleteSemester(${s.semester_id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+        `;
+        });
+        tbody.innerHTML = html;
+      }
+
+      // --- MODAL & FORM LOGIC ---
+
+      function openModal(id = null) {
+        const modalEl = document.getElementById("semesterModal");
+        const modal = new bootstrap.Modal(modalEl);
+
+        // Reset Form
+        document.getElementById("semesterForm").reset();
+
+        if (id) {
+          // MODE EDIT: Isi form dengan data yang ada
+          const s = allSemesters.find((item) => item.semester_id === id);
+          if (s) {
+            document.getElementById("modalTitle").innerText = "Edit Semester";
+            document.getElementById("semId").value = s.semester_id;
+            document.getElementById("semName").value = s.name;
+            document.getElementById("semYear").value = s.year;
+
+            // Format Date Value (YYYY-MM-DD)
+            const fmt = (d) => (d ? new Date(d).toISOString().split("T")[0] : "");
+
+            document.getElementById("startDate").value = fmt(s.start_date);
+            document.getElementById("endDate").value = fmt(s.end_date);
+            document.getElementById("utsStart").value = fmt(s.uts_start_date);
+            document.getElementById("utsEnd").value = fmt(s.uts_end_date);
+            document.getElementById("uasStart").value = fmt(s.uas_start_date);
+            document.getElementById("uasEnd").value = fmt(s.uas_end_date);
+
+            document.getElementById("minTa1").value = s.min_ta1;
+            document.getElementById("minTa2").value = s.min_ta2;
+            document.getElementById("isActiveCheck").checked = s.is_active;
+          }
+        } else {
+          // MODE BARU
+          document.getElementById("modalTitle").innerText = "Setup Semester Baru";
+          document.getElementById("semId").value = "";
+        }
+
+        modal.show();
+      }
+
+      async function handleSave(e) {
+        e.preventDefault();
+
+        // Collect Data
+        const body = {
+          id: document.getElementById("semId").value,
+          name: document.getElementById("semName").value,
+          year: document.getElementById("semYear").value,
+          start_date: document.getElementById("startDate").value,
+          end_date: document.getElementById("endDate").value,
+          uts_start: document.getElementById("utsStart").value,
+          uts_end: document.getElementById("utsEnd").value,
+          uas_start: document.getElementById("uasStart").value,
+          uas_end: document.getElementById("uasEnd").value,
+          min_ta1: document.getElementById("minTa1").value,
+          min_ta2: document.getElementById("minTa2").value,
+          is_active: document.getElementById("isActiveCheck").checked,
+        };
+
+        try {
+          const res = await fetch("/api/coordinator/semesters", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            // Tutup Modal & Refresh
+            const modalEl = document.getElementById("semesterModal");
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            fetchSemesters();
+          } else {
+            alert("Gagal: " + result.message);
+          }
+        } catch (e) {
+          alert("Error koneksi");
+        }
+      }
+
+      async function deleteSemester(id) {
+        if (!confirm("Yakin ingin menghapus semester ini?")) return;
+        try {
+          const res = await fetch(`/api/coordinator/semesters/${id}`, { method: "DELETE" });
+          const result = await res.json();
+          if (result.success) fetchSemesters();
+          else alert(result.message);
+        } catch (e) {
+          alert("Error koneksi");
+        }
+      }
+
+      async function setActive(id) {
+        if (!confirm("Set semester ini menjadi AKTIF? Semester lain akan otomatis non-aktif.")) return;
+        try {
+          const res = await fetch("/api/coordinator/semesters/set-active", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          if ((await res.json()).success) fetchSemesters();
+        } catch (e) {
+          alert("Error koneksi");
+        }
+      }
+    </script>
+  </body>
+</html>
