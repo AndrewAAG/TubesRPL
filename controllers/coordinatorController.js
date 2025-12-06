@@ -59,3 +59,60 @@ exports.setActiveSemester = async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal mengupdate status' });
     }
 };
+
+exports.getAssignments = async (req, res) => {
+    try {
+        // Destructuring hasil return baru
+        const { semesterName, students } = await CoordinatorModel.getAssignmentData();
+        const lecturers = await CoordinatorModel.getAllLecturers();
+
+        // Format data tabel (Tetap sama)
+        const formattedData = students.map((s, index) => {
+            let lecturerNames = [];
+            if (s.p1) lecturerNames.push(s.p1.name);
+            if (s.p2) lecturerNames.push(s.p2.name);
+            
+            return {
+                no: index + 1,
+                thesis_id: s.thesis_id,
+                npm: s.npm,
+                name: s.student_name,
+                stage: s.stage_type,
+                lecturer_display: lecturerNames.length > 0 ? lecturerNames.join(', ') : '-',
+                p1_id: s.p1 ? s.p1.lecturer_id : '', 
+                p2_id: s.p2 ? s.p2.lecturer_id : ''
+            };
+        });
+
+        res.json({ 
+            success: true, 
+            data: { 
+                active_semester: semesterName, // <--- Kirim ke Frontend
+                students: formattedData, 
+                lecturers: lecturers 
+            } 
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+exports.saveAssignment = async (req, res) => {
+    try {
+        const { thesisId, p1Id, p2Id } = req.body;
+        
+        // Validasi sederhana: P1 dan P2 tidak boleh orang yang sama
+        if (p1Id && p2Id && p1Id == p2Id) {
+            return res.status(400).json({ success: false, message: 'Pembimbing 1 dan 2 tidak boleh sama.' });
+        }
+
+        await CoordinatorModel.updateAssignment(thesisId, p1Id, p2Id);
+        res.json({ success: true, message: 'Pembimbing berhasil ditetapkan.' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Gagal menyimpan data.' });
+    }
+};
