@@ -182,6 +182,174 @@ class CoordinatorModel {
             connection.release();
         }
     }
+
+    // AMBIL DATA MAHASISWA + STATUS TA DI SEMESTER AKTIF
+    static async getAllStudentsExtended() {
+        try {
+            // 1. Cek Semester Aktif
+            const [sem] = await db.execute(`SELECT semester_id FROM semesters WHERE is_active = TRUE LIMIT 1`);
+            const activeSemId = sem.length > 0 ? sem[0].semester_id : null;
+
+            // 2. Query Student + Cek apakah dia punya record Thesis di semester ini
+            const query = `
+                SELECT 
+                    s.user_id, s.npm, s.cohort_year, u.name, u.email, u.status as account_status,
+                    
+                    -- Cek apakah ambil TA di semester aktif (Return 1 or 0)
+                    (SELECT COUNT(*) FROM thesis t 
+                     WHERE t.student_id = s.user_id AND t.semester_id = ?) as is_taking_ta,
+                     
+                    -- Ambil tipe TA nya (TA1/TA2) jika ada
+                    (SELECT stage_type FROM thesis t 
+                     WHERE t.student_id = s.user_id AND t.semester_id = ? LIMIT 1) as current_stage
+
+                FROM students s
+                JOIN users u ON s.user_id = u.user_id
+                ORDER BY s.npm ASC
+            `;
+            const [rows] = await db.execute(query, [activeSemId, activeSemId]);
+            return rows;
+
+        } catch (error) { throw error; }
+    }
+
+    // AMBIL DATA DOSEN
+    static async getAllLecturersExtended() {
+        const query = `
+            SELECT l.user_id, l.nip, u.name, u.email, u.status as account_status
+            FROM lecturers l
+            JOIN users u ON l.user_id = u.user_id
+            ORDER BY u.name ASC
+        `;
+        const [rows] = await db.execute(query);
+        return rows;
+    }
+
+    // UPDATE STATUS MAHASISWA (Akun & TA)
+    static async updateStudentStatus(studentId, accountStatus, isTakingTa, stageType) {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        try {
+            // 1. Update Status Akun (Users)
+            await connection.execute(`UPDATE users SET status = ? WHERE user_id = ?`, [accountStatus, studentId]);
+
+            // 2. Handle Status TA (Enroll/Drop)
+            // Ambil Semester Aktif
+            const [sem] = await connection.execute(`SELECT semester_id FROM semesters WHERE is_active = TRUE LIMIT 1`);
+            if (sem.length === 0) throw new Error("Tidak ada semester aktif");
+            const activeSemId = sem[0].semester_id;
+
+            if (isTakingTa) {
+                // ENROLL: Insert/Update thesis record
+                // Cek dulu apakah sudah ada
+                const [existing] = await connection.execute(
+                    `SELECT thesis_id FROM thesis WHERE student_id = ? AND semester_id = ?`, 
+                    [studentId, activeSemId]
+                );
+
+                if (existing.length === 0) {
+                    // Belum ada -> Insert Baru
+                    await connection.execute(
+                        `INSERT INTO thesis (student_id, semester_id, title, stage_type) VALUES (?, ?, 'Judul Belum Diisi', ?)`,
+                        [studentId, activeSemId, stageType]
+                    );
+                } else {
+                    // Sudah ada -> Update Stage Type saja (jika berubah)
+                    await connection.execute(
+                        `UPDATE thesis SET stage_type = ? WHERE thesis_id = ?`,
+                        [stageType, existing[0].thesis_id]
+                    );
+                }
+            } else {
+                // DROP: Hapus thesis record di semester ini
+                await connection.execute(
+                    `DELETE FROM thesis WHERE student_id = ? AND semester_id = ?`,
+                    [studentId, activeSemId]
+                );
+            }
+
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // UPDATE STATUS DOSEN
+    static async updateLecturerStatus(lecturerId, accountStatus) {
+        const query = `UPDATE users SET status = ? WHERE user_id = ?`;
+        await db.execute(query, [accountStatus, lecturerId]);
+        return true;
+    }
+
+    // CREATE NEW STUDENT
+    static async createStudent(data) {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        try {
+            // 1. Insert ke tabel USERS (Parent)
+            // Password default: '123456'
+            const [userResult] = await connection.execute(
+                `INSERT INTO users (name, email, password, role, status) VALUES (?, ?, '123456', 'student', 'active')`,
+                [data.name, data.email]
+            );
+            const newUserId = userResult.insertId;
+
+            // 2. Insert ke tabel STUDENTS (Child)
+            await connection.execute(
+                `INSERT INTO students (user_id, npm, cohort_year) VALUES (?, ?, ?)`,
+                [newUserId, data.npm, data.cohort_year]
+            );
+
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            // Cek duplicate entry error (biasanya email atau npm sama)
+            if (error.code === 'ER_DUP_ENTRY') {
+                throw new Error('Email atau NPM sudah terdaftar.');
+            }
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // CREATE NEW LECTURER
+    static async createLecturer(data) {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        try {
+            // 1. Insert ke tabel USERS
+            const [userResult] = await connection.execute(
+                `INSERT INTO users (name, email, password, role, status) VALUES (?, ?, '123456', 'lecturer', 'active')`,
+                [data.name, data.email]
+            );
+            const newUserId = userResult.insertId;
+
+            // 2. Insert ke tabel LECTURERS
+            await connection.execute(
+                `INSERT INTO lecturers (user_id, nip) VALUES (?, ?)`,
+                [newUserId, data.nip]
+            );
+
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            if (error.code === 'ER_DUP_ENTRY') {
+                throw new Error('Email atau NIP sudah terdaftar.');
+            }
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
 }
+
+
 
 module.exports = CoordinatorModel;

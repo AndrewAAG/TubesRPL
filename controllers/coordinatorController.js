@@ -116,3 +116,72 @@ exports.saveAssignment = async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal menyimpan data.' });
     }
 };
+
+exports.getUsersData = async (req, res) => {
+    try {
+        const [students, lecturers] = await Promise.all([
+            CoordinatorModel.getAllStudentsExtended(),
+            CoordinatorModel.getAllLecturersExtended()
+        ]);
+
+        res.json({ success: true, data: { students, lecturers } });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+exports.updateStudent = async (req, res) => {
+    try {
+        const { studentId, status, isTakingTa, stage } = req.body;
+        // isTakingTa dikirim sebagai boolean true/false
+        await CoordinatorModel.updateStudentStatus(studentId, status, isTakingTa, stage);
+        res.json({ success: true, message: 'Data mahasiswa diperbarui.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Gagal update data.' });
+    }
+};
+
+exports.updateLecturer = async (req, res) => {
+    try {
+        const { lecturerId, status } = req.body;
+        await CoordinatorModel.updateLecturerStatus(lecturerId, status);
+        res.json({ success: true, message: 'Data dosen diperbarui.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Gagal update data.' });
+    }
+};
+
+exports.createStudent = async (req, res) => {
+    try {
+        const { name, email, npm, cohort_year } = req.body;
+        
+        // Validasi sederhana
+        if (!name || !email || !npm || !cohort_year) {
+            return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
+        }
+
+        await CoordinatorModel.createStudent({ name, email, npm, cohort_year });
+        res.json({ success: true, message: 'Mahasiswa berhasil ditambahkan.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message || 'Gagal membuat akun.' });
+    }
+};
+
+exports.createLecturer = async (req, res) => {
+    try {
+        const { name, email, nip } = req.body;
+
+        if (!name || !email || !nip) {
+            return res.status(400).json({ success: false, message: 'Semua field wajib diisi.' });
+        }
+
+        await CoordinatorModel.createLecturer({ name, email, nip });
+        res.json({ success: true, message: 'Dosen berhasil ditambahkan.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message || 'Gagal membuat akun.' });
+    }
+};

@@ -27,6 +27,7 @@ router.get('/lecturer/student-progress', (req, res) => res.sendFile(publicPath('
 // --- KOORDINATOR ---
 router.get('/coordinator/schedule', (req, res) => res.sendFile(publicPath('/coordinator/coordinator_schedules.html')));
 router.get('/coordinator/assignments', (req, res) => res.sendFile(publicPath('/coordinator/coordinator_assignments.html')));
+router.get('/coordinator/users', (req, res) => res.sendFile(publicPath('/coordinator/coordinator_users.html')));
 
 // Fallback 404
 // router.get('*', (req, res) => res.status(404).send('Halaman tidak ditemukan'));

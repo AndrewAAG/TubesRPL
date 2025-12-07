@@ -10,5 +10,10 @@ router.delete('/semesters/:id', coordinatorController.deleteSemester);
 router.post('/semesters/set-active', coordinatorController.setActiveSemester);
 router.get('/assignments', coordinatorController.getAssignments);
 router.post('/assignments', coordinatorController.saveAssignment);
+router.get('/users', coordinatorController.getUsersData);
+router.post('/users/student', coordinatorController.updateStudent);
+router.post('/users/lecturer', coordinatorController.updateLecturer);
+router.post('/users/create-student', coordinatorController.createStudent);
+router.post('/users/create-lecturer', coordinatorController.createLecturer);
 
 module.exports = router;
