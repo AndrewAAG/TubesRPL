@@ -147,6 +147,58 @@ class ScheduleModel {
             connection.release();
         }
     }
+
+    static async getStudentClassSchedule(studentId) {
+        const query = `
+            SELECT student_sched_id, day_of_week, start_time, end_time, course_name
+            FROM student_schedules
+            WHERE student_id = ? AND is_deleted = FALSE
+            ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), start_time
+        `;
+        const [rows] = await db.execute(query, [studentId]);
+        return rows;
+    }
+
+    // 2. Simpan Jadwal Rutin (Replace Mode: Hapus Lama -> Insert Baru)
+    static async replaceStudentSchedule(studentId, schedules) {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        try {
+            // A. Hapus jadwal lama (Reset)
+            await connection.execute(
+                `DELETE FROM student_schedules WHERE student_id = ?`, 
+                [studentId]
+            );
+
+            // B. Insert jadwal baru (Bulk Insert)
+            if (schedules.length > 0) {
+                // Cari Semester Aktif
+                const [sem] = await connection.execute(`SELECT semester_id FROM semesters WHERE is_active = TRUE LIMIT 1`);
+                const activeSemId = sem.length > 0 ? sem[0].semester_id : 1; // Default 1 jika error
+
+                const placeholders = schedules.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+                const query = `
+                    INSERT INTO student_schedules (student_id, semester_id, day_of_week, start_time, end_time, course_name) 
+                    VALUES ${placeholders}
+                `;
+                
+                const params = [];
+                schedules.forEach(s => {
+                    params.push(studentId, activeSemId, s.day, s.start, s.end, s.course);
+                });
+
+                await connection.execute(query, params);
+            }
+
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
 }
 
 module.exports = ScheduleModel;

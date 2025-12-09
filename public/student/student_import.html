@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Import Jadwal - Student</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+      /* Area Drag & Drop */
+      .upload-area {
+        border: 2px dashed #dce1e9;
+        border-radius: 20px;
+        background-color: #ffffff;
+        padding: 60px 20px;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+      }
+      .upload-area:hover,
+      .upload-area.dragover {
+        border-color: #0d6efd;
+        background-color: #f8faff;
+      }
+      .icon-csv {
+        font-size: 60px;
+        color: #4285f4;
+        margin-bottom: 20px;
+      }
+
+      /* Table Input Styling */
+      .input-transparent {
+        background: transparent;
+        border: none;
+        width: 100%;
+        font-weight: 500;
+        color: #333;
+      }
+      .input-transparent:focus {
+        background: #fff;
+        outline: 2px solid #80bdff;
+        border-radius: 4px;
+      }
+      .table-input td {
+        vertical-align: middle;
+        padding: 10px 15px;
+      }
+      .table-input thead th {
+        background: #e9ecef;
+        color: #495057;
+        font-weight: 700;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid h-100">
+      <div class="row h-100">
+        <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
+
+        <div class="col-md-9 col-lg-10 h-100 p-0 position-relative bg-light">
+          <div class="main-content-scrollable">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h2 class="fw-bold text-primary mb-1">Import Jadwal</h2>
+              <div class="d-flex align-items-center gap-3">
+                <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <div class="notification-circle"><i class="fas fa-bell fa-lg text-secondary"></i></div>
+              </div>
+            </div>
+
+            <p class="text-muted mb-4">Import file CSV atau tambahkan jadwal secara manual.</p>
+
+            <div id="section-upload">
+              <div class="d-flex justify-content-between mb-3">
+                <button class="btn btn-light bg-white shadow-sm rounded-pill px-4 text-primary fw-bold" onclick="showTableMode()"><i class="fas fa-edit me-2"></i> Input Manual</button>
+              </div>
+
+              <div class="upload-area shadow-sm" id="drop-zone">
+                <i class="fas fa-file-csv icon-csv"></i>
+                <h5 class="fw-bold text-dark">Drag & Drop File CSV di sini</h5>
+                <p class="text-muted small mb-4">Format: Hari, Mata Kuliah, Jam Mulai, Jam Selesai</p>
+
+                <input type="file" id="fileInput" accept=".csv" hidden />
+                <button class="btn btn-primary-custom rounded-pill px-5 fw-bold" onclick="document.getElementById('fileInput').click()">Pilih File</button>
+              </div>
+            </div>
+
+            <div id="section-table" style="display: none">
+              <div class="card-standard p-4 border-0 shadow-sm">
+                <div class="table-responsive rounded-3 border mb-3">
+                  <table class="table table-input mb-0 table-hover">
+                    <thead>
+                      <tr>
+                        <th width="15%">Hari</th>
+                        <th width="35%">Nama Mata Kuliah</th>
+                        <th width="20%">Jam Mulai</th>
+                        <th width="20%">Jam Selesai</th>
+                        <th width="10%" class="text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody"></tbody>
+                  </table>
+                </div>
+
+                <button class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold mb-4" onclick="addEmptyRow()"><i class="fas fa-plus me-2"></i> Tambahkan Baris Baru</button>
+
+                <div class="d-flex gap-3 justify-content-center">
+                  <button class="btn btn-primary-custom rounded-pill px-5 fw-bold" onclick="saveSchedules()">Simpan Perubahan</button>
+                  <button class="btn btn-danger rounded-pill px-5 fw-bold" onclick="cancelEdit()">Batalkan</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="height: 50px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar.js"></script>
+    <script></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // 1. Cek Sesi
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        if (!userSession || userSession.role !== "student") {
+          window.location.href = "/login";
+          return;
+        }
+
+        // 2. Load Existing Data (Optional, biar tabel gak kosong kalau udah pernah isi)
+        fetchExistingSchedule(userSession.user_id);
+
+        // 3. Setup Upload Listener
+        setupUpload();
+      });
+
+      // --- STATE MANAGEMENT ---
+      function showTableMode() {
+        document.getElementById("section-upload").style.display = "none";
+        document.getElementById("section-table").style.display = "block";
+      }
+
+      function cancelEdit() {
+        if (confirm("Batalkan perubahan? Data yang belum disimpan akan hilang.")) {
+          document.getElementById("section-table").style.display = "none";
+          document.getElementById("section-upload").style.display = "block";
+          location.reload(); // Reset state bersih
+        }
+      }
+
+      // --- DATA FETCHING ---
+      async function fetchExistingSchedule(studentId) {
+        try {
+          const res = await fetch(`/api/schedules/classes/${studentId}`);
+          const result = await res.json();
+          if (result.success && result.data.length > 0) {
+            // Jika ada data, langsung populate tabel tapi tetap di mode upload dulu
+            // atau bisa langsung switch ke tabel jika diinginkan
+            populateTable(result.data);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // --- TABLE LOGIC ---
+      function populateTable(data) {
+        const tbody = document.getElementById("scheduleTableBody");
+        tbody.innerHTML = "";
+        data.forEach((item) => addRow(item));
+      }
+
+      function addRow(data = {}) {
+        const tbody = document.getElementById("scheduleTableBody");
+        const tr = document.createElement("tr");
+
+        // Default values
+        const day = data.day || "Senin";
+        const course = data.course || "";
+        const start = data.start || "07:00";
+        const end = data.end || "10:00";
+
+        tr.innerHTML = `
+        <td>
+            <select class="form-select border-0 bg-transparent fw-bold text-dark">
+                <option ${day === "Senin" ? "selected" : ""}>Senin</option>
+                <option ${day === "Selasa" ? "selected" : ""}>Selasa</option>
+                <option ${day === "Rabu" ? "selected" : ""}>Rabu</option>
+                <option ${day === "Kamis" ? "selected" : ""}>Kamis</option>
+                <option ${day === "Jumat" ? "selected" : ""}>Jumat</option>
+                <option ${day === "Sabtu" ? "selected" : ""}>Sabtu</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" class="input-transparent" value="${course}" placeholder="Nama Mata Kuliah">
+        </td>
+        <td>
+            <input type="time" class="input-transparent text-center" value="${start}">
+        </td>
+        <td>
+            <input type="time" class="input-transparent text-center" value="${end}">
+        </td>
+        <td class="text-center">
+            <button class="btn btn-sm text-danger" onclick="this.closest('tr').remove()">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    `;
+        tbody.appendChild(tr);
+      }
+
+      function addEmptyRow() {
+        addRow({ course: "Mata Kuliah Baru" });
+      }
+
+      // --- CSV PARSING LOGIC (CLIENT SIDE) ---
+      function setupUpload() {
+        const dropZone = document.getElementById("drop-zone");
+        const fileInput = document.getElementById("fileInput");
+
+        // 1. Handle Klik pada Area Dropzone
+        dropZone.addEventListener("click", (e) => {
+          if (e.target.tagName === "BUTTON" || e.target.closest("button")) {
+            return;
+          }
+
+          // Jika yang diklik adalah area kosong (bukan tombol), baru trigger input
+          fileInput.click();
+        });
+
+        // 2. Efek Visual Drag & Drop (Tetap sama)
+        dropZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          dropZone.classList.add("dragover");
+        });
+
+        dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+
+        dropZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dropZone.classList.remove("dragover");
+          if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        // 3. Handle saat File Dipilih
+        fileInput.addEventListener("change", () => {
+          if (fileInput.files.length) {
+            handleFile(fileInput.files[0]);
+
+            // Reset input agar bisa memilih file yang sama berulang kali jika perlu
+            fileInput.value = "";
+          }
+        });
+      }
+
+      function handleFile(file) {
+        if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
+          alert("Mohon upload file format .csv");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          parseCSV(text);
+        };
+        reader.readAsText(file);
+      }
+
+      function parseCSV(text) {
+        const lines = text.split("\n");
+        const parsedData = [];
+
+        // Asumsi format CSV: Hari, Mata Kuliah, Jam Mulai, Jam Selesai
+        // Skip Header jika ada (Cek baris pertama)
+        let startIndex = 0;
+        if (lines[0].toLowerCase().includes("hari")) startIndex = 1;
+
+        for (let i = startIndex; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const cols = line.split(",");
+          if (cols.length >= 4) {
+            parsedData.push({
+              day: cols[0].trim(),
+              course: cols[1].trim(),
+              start: cols[2].trim(),
+              end: cols[3].trim(),
+            });
+          }
+        }
+
+        if (parsedData.length > 0) {
+          populateTable(parsedData);
+          showTableMode(); // Pindah ke tampilan tabel untuk review
+          alert(`Berhasil membaca ${parsedData.length} jadwal. Silakan cek dan simpan.`);
+        } else {
+          alert("Gagal membaca CSV atau file kosong. Pastikan format: Hari, Matkul, Jam Mulai, Jam Selesai");
+        }
+      }
+
+      // --- SAVE TO BACKEND ---
+      async function saveSchedules() {
+        // 1. Ambil data dari tabel HTML
+        const rows = document.querySelectorAll("#scheduleTableBody tr");
+        const schedules = [];
+
+        rows.forEach((row) => {
+          const inputs = row.querySelectorAll("input, select");
+          // Pastikan urutan input sesuai dengan struktur HTML tabel (Hari, Matkul, Start, End)
+          schedules.push({
+            day: inputs[0].value,
+            course: inputs[1].value,
+            start: inputs[2].value,
+            end: inputs[3].value,
+          });
+        });
+
+        // 2. Siapkan Request
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        const btn = document.querySelector('button[onclick="saveSchedules()"]');
+        const originalText = btn.innerText;
+
+        // UI Feedback (Disable tombol)
+        btn.disabled = true;
+        btn.innerText = "Menyimpan...";
+
+        try {
+          // 3. Kirim ke Backend
+          const res = await fetch("/api/schedules/classes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentId: userSession.user_id, schedules }),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            // [PERBAIKAN DISINI: REDIRECT KE KALENDER]
+            alert("Jadwal berhasil disimpan! Mengalihkan ke kalender...");
+            // Asumsi route untuk halaman kalender nanti adalah '/student/calendar'
+            window.location.href = "/student/calendar";
+          } else {
+            alert(result.message);
+            // Kembalikan tombol jika gagal
+            btn.disabled = false;
+            btn.innerText = originalText;
+          }
+        } catch (e) {
+          console.error(e);
+          alert("Error koneksi ke server");
+          // Kembalikan tombol jika error jaringan
+          btn.disabled = false;
+          btn.innerText = originalText;
+        }
+      }
+
+      function logout() {
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+    </script>
+  </body>
+</html>

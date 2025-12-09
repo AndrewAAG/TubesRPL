@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS student_schedules (
     student_sched_id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     semester_id INT NOT NULL,
+    course_name VARCHAR(100),
     day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
