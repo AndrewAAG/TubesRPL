@@ -24,7 +24,7 @@ class NotificationModel {
     }
 
     // 1. Ambil ID User berdasarkan Target Group
-    static async getTargetUserIds(targetType, senderId = null) {
+    static async getTargetUserIds(targetType, senderId = null, specificStudentId = null) {
         let query = '';
         let params = [];
 
@@ -38,8 +38,7 @@ class NotificationModel {
             case 'all_lecturers':
                 query = `SELECT user_id FROM users WHERE role = 'lecturer' AND status = 'active'`;
                 break;
-            case 'my_students': // Khusus Dosen
-                // Ambil mahasiswa yang dibimbing oleh dosen ini (senderId)
+            case 'my_students': // Semua Mahasiswa Bimbingan
                 query = `
                     SELECT DISTINCT t.student_id as user_id
                     FROM thesis_supervisors ts
@@ -48,6 +47,9 @@ class NotificationModel {
                 `;
                 params = [senderId];
                 break;
+            case 'specific_student': // UPDATE: Satu Mahasiswa Tertentu
+                if (specificStudentId) return [specificStudentId]; // Langsung return array ID
+                return [];
             default:
                 return [];
         }
@@ -56,20 +58,18 @@ class NotificationModel {
         return rows.map(r => r.user_id);
     }
 
-    // 2. Kirim Notifikasi Massal (Bulk Insert)
-    static async createBulk(recipientIds, title, message) {
+    // 2. UPDATE: Create Bulk dengan SOURCE
+    static async createBulk(recipientIds, title, message, source) {
         if (recipientIds.length === 0) return false;
 
-        // Kita perlu menyusun query manual untuk bulk insert
-        // INSERT INTO notifications (user_id, title, content) VALUES (?,?,?), (?,?,?), ...
+        // Tambahkan kolom source ke query
+        const placeholders = recipientIds.map(() => '(?, ?, ?, ?)').join(', ');
+        const query = `INSERT INTO notifications (user_id, title, content, source) VALUES ${placeholders}`;
         
-        const placeholders = recipientIds.map(() => '(?, ?, ?)').join(', ');
-        const query = `INSERT INTO notifications (user_id, title, content) VALUES ${placeholders}`;
-        
-        // Flatten array params: [id1, title, msg, id2, title, msg, ...]
         const params = [];
         recipientIds.forEach(id => {
-            params.push(id, title, message);
+            // Default source jika kosong
+            params.push(id, title, message, source || 'Info Sistem');
         });
 
         await db.execute(query, params);

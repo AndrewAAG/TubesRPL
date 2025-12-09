@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     content TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     time_notified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    source VARCHAR(100) DEFAULT 'Info Sistem',
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 

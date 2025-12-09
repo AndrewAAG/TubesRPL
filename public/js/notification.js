@@ -1,5 +1,3 @@
-// public/js/notification.js
-
 document.addEventListener("DOMContentLoaded", () => {
     // 1. Cek User Session
     const userSession = JSON.parse(localStorage.getItem('user_session'));
@@ -58,138 +56,116 @@ async function updateBadgeCount(userId) {
 
 // --- LOGIC INTERAKSI UTAMA ---
 function initNotificationSystem(currentUserId) {
-    const userSession = JSON.parse(localStorage.getItem('user_session')); // Ambil data session lagi
-    const role = userSession ? userSession.role : 'student';
-
+    // --- 1. SETUP VARIABEL & SESSION ---
     const bellIcon = document.getElementById('bell-icon') || document.querySelector('.notification-circle');
     const overlay = document.getElementById('notificationOverlay');
     const closeBtn = document.getElementById('closeNotif');
     const notifList = document.getElementById('notifList');
+    const broadcastContainer = document.getElementById('broadcastContainer'); // Wadah form broadcast
 
-    const broadcastContainer = document.getElementById('broadcastContainer');
-    
+    // Ambil data session terbaru
+    const userSession = JSON.parse(localStorage.getItem('user_session'));
+    const role = userSession ? userSession.role : 'student';
+
+    // --- 2. LOGIKA RENDER FORM BROADCAST (Hanya Dosen & Koordinator) ---
     if (broadcastContainer && (role === 'lecturer' || role === 'coordinator')) {
-        renderBroadcastForm(role, broadcastContainer);
-    }
-    
-    // 1. BUKA NOTIFIKASI
-    if (bellIcon) {
-        bellIcon.addEventListener('click', async (e) => {
-            e.preventDefault();
-            if(overlay) {
-                overlay.style.display = 'flex'; // Munculkan Drawer
-                
-                // Load data notifikasi
-                await fetchNotifications(currentUserId);
-
-                // Tandai sudah dibaca (Hilangkan Badge)
-                await markAllRead(currentUserId);
-            }
-        });
-    }
-
-    // 2. TUTUP NOTIFIKASI
-    const closeDrawer = () => { if(overlay) overlay.style.display = 'none'; };
-
-    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-    if (overlay) {
-        window.addEventListener('click', (e) => {
-            if (e.target === overlay) closeDrawer();
-        });
-    }
-
-    // 3. FUNGSI FETCH DATA
-    async function fetchNotifications(userId) {
-        try {
-            const response = await fetch(`/api/notifications?user_id=${userId}`);
-            const result = await response.json();
-            
-            if(result.success) {
-                renderCards(result.data);
-            }
-        } catch (error) {
-            if(notifList) notifList.innerHTML = '<p class="loading-state">Gagal memuat data.</p>';
-        }
-    }
-
-    // 4. FUNGSI RENDER CARD
-    function renderCards(data) {
-        if (!notifList) return;
-
-        if (!data || data.length === 0) {
-            notifList.innerHTML = '<p class="loading-state">Tidak ada notifikasi.</p>';
-            return;
-        }
-
-        let html = '';
-        data.forEach(item => {
-            // Format waktu sederhana
-            const time = new Date(item.time_notified).toLocaleDateString('id-ID');
-            
-            // Highlight jika belum dibaca (opsional, background agak abu)
-            const bgClass = item.is_read ? 'bg-white' : 'bg-light';
-
-            html += `
-                <div class="notif-card ${bgClass}">
-                    <div class="d-flex justify-content-between">
-                        <span class="notif-semester">Info Sistem</span>
-                        <small class="text-muted" style="font-size:10px">${time}</small>
-                    </div>
-                    <div class="notif-title">${item.title}</div>
-                    <div class="notif-desc">${item.content}</div>
-                </div>
-            `;
-        });
-        notifList.innerHTML = html;
-    }
-
-    function renderBroadcastForm(role, container) {
-        // Tentukan Opsi Dropdown berdasarkan Role
+        
         let optionsHtml = '';
         
+        // Tentukan Opsi Dropdown berdasarkan Role
         if (role === 'coordinator') {
             optionsHtml = `
+                <option value="all_users">Semua Pengguna Aktif</option>
                 <option value="all_students">Semua Mahasiswa</option>
                 <option value="all_lecturers">Semua Dosen</option>
-                <option value="all_users">Semua Pengguna Aktif</option>
             `;
         } else if (role === 'lecturer') {
             optionsHtml = `
-                <option value="my_students">Mahasiswa Bimbingan Saya</option>
-                <option value="all_students">Semua Mahasiswa (Umum)</option>
+                <option value="my_students">Semua Mahasiswa Bimbingan</option>
+                <option value="specific_student">Pilih Mahasiswa Tertentu...</option>
             `;
         }
 
-        // Masukkan HTML Form (Desain Compact)
-        container.innerHTML = `
-            <div class="card border-0 shadow-sm p-3 mb-3" style="background: #f8f9fa; border-radius: 12px;">
-                <h6 class="fw-bold text-primary mb-2"><i class="fas fa-bullhorn me-2"></i>Buat Pengumuman</h6>
+        // Render HTML Form
+        broadcastContainer.innerHTML = `
+            <div class="card border-0 shadow-sm p-3 mb-3" style="background: #f0f4ff; border-radius: 12px;">
+                <h6 class="fw-bold text-primary mb-2" style="font-size: 0.9rem;">
+                    <i class="fas fa-bullhorn me-2"></i>Buat Pengumuman
+                </h6>
                 <form id="broadcastForm">
-                    <select id="bcTarget" class="form-select form-select-sm mb-2 border-0 shadow-sm">
+                    <select id="bcTarget" class="form-select form-select-sm mb-2 border-0 shadow-sm" style="cursor:pointer" required>
                         ${optionsHtml}
                     </select>
+
+                    <select id="bcSpecificStudent" class="form-select form-select-sm mb-2 border-0 shadow-sm" style="display:none; cursor:pointer">
+                        <option value="">- Memuat Daftar Mahasiswa... -</option>
+                    </select>
+
                     <input type="text" id="bcTitle" class="form-control form-control-sm mb-2 border-0 shadow-sm" placeholder="Judul Singkat" required>
-                    <textarea id="bcMessage" class="form-control form-control-sm mb-2 border-0 shadow-sm" rows="2" placeholder="Pesan..." required></textarea>
+                    <textarea id="bcMessage" class="form-control form-control-sm mb-2 border-0 shadow-sm" rows="2" placeholder="Tulis pesan..." required></textarea>
+                    
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-sm rounded-pill fw-bold">Kirim Notifikasi</button>
                     </div>
                 </form>
             </div>
-            <hr class="border-white opacity-25 mb-3"> `;
+            <hr class="border-white opacity-25 mb-3">
+        `;
 
-        // Handle Submit Broadcast
+        // Event Listener: Dropdown Target Berubah (Khusus Dosen)
+        const targetSelect = document.getElementById('bcTarget');
+        const studentSelect = document.getElementById('bcSpecificStudent');
+
+        if (targetSelect) {
+            targetSelect.addEventListener('change', async function() {
+                if (this.value === 'specific_student') {
+                    // Tampilkan dropdown kedua & set wajib diisi
+                    studentSelect.style.display = 'block';
+                    studentSelect.required = true;
+                    
+                    // Fetch Data Mahasiswa Bimbingan Dosen Ini
+                    try {
+                        // Kita reuse endpoint list mahasiswa
+                        const res = await fetch(`/api/lecturer/students-list/${currentUserId}`);
+                        const result = await res.json();
+                        
+                        if (result.success) {
+                            let opts = '<option value="">- Pilih Mahasiswa -</option>';
+                            result.data.forEach(s => {
+                                // Value pakai student_id (user_id), Label pakai Nama + NPM
+                                opts += `<option value="${s.student_id}">${s.name} (${s.npm})</option>`;
+                            });
+                            studentSelect.innerHTML = opts;
+                        }
+                    } catch (e) { 
+                        console.error("Gagal load mahasiswa", e); 
+                        studentSelect.innerHTML = '<option value="">Gagal memuat data</option>';
+                    }
+                } else {
+                    // Sembunyikan jika bukan specific student
+                    studentSelect.style.display = 'none';
+                    studentSelect.required = false;
+                }
+            });
+        }
+
+        // Event Listener: Submit Form Broadcast
         document.getElementById('broadcastForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             const originalText = btn.innerText;
             
-            // UI Feedback
             btn.disabled = true; 
             btn.innerText = 'Mengirim...';
 
+            const targetVal = document.getElementById('bcTarget').value;
+            const specificVal = document.getElementById('bcSpecificStudent').value;
+
             const body = {
-                senderId: userSession.user_id,
-                targetType: document.getElementById('bcTarget').value,
+                senderId: currentUserId,
+                targetType: targetVal,
+                // Jika mode specific, kirim ID mahasiswanya
+                specificStudentId: (targetVal === 'specific_student') ? specificVal : null,
                 title: document.getElementById('bcTitle').value,
                 message: document.getElementById('bcMessage').value
             };
@@ -205,13 +181,14 @@ function initNotificationSystem(currentUserId) {
                 if (result.success) {
                     alert(result.message);
                     e.target.reset(); // Reset form
-                    // Optional: Refresh list notifikasi sendiri untuk melihat efek (jika kirim ke diri sendiri/all)
+                    studentSelect.style.display = 'none'; // Sembunyikan dropdown mhs
+                    fetchNotifications(currentUserId); // Refresh list bawahnya
                 } else {
                     alert("Gagal: " + result.message);
                 }
-            } catch (err) {
-                console.error(err);
-                alert("Gagal koneksi server");
+            } catch (err) { 
+                console.error(err); 
+                alert("Kesalahan koneksi server."); 
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalText;
@@ -219,7 +196,81 @@ function initNotificationSystem(currentUserId) {
         });
     }
 
-    // 5. FUNGSI TANDAI SUDAH DIBACA
+    // --- 3. INTERAKSI BUKA/TUTUP DRAWER ---
+    
+    // Buka Drawer
+    if (bellIcon) {
+        bellIcon.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if(overlay) {
+                overlay.style.display = 'flex'; // Tampilkan Overlay
+                await fetchNotifications(currentUserId); // Load Data
+                await markAllRead(currentUserId); // Hilangkan Badge Merah
+            }
+        });
+    }
+
+    // Tutup Drawer
+    const closeDrawer = () => { if(overlay) overlay.style.display = 'none'; };
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    if (overlay) {
+        window.addEventListener('click', (e) => {
+            if (e.target === overlay) closeDrawer(); // Klik area gelap
+        });
+    }
+
+    // --- 4. FUNGSI FETCH & RENDER DATA ---
+
+    async function fetchNotifications(userId) {
+        try {
+            const response = await fetch(`/api/notifications?user_id=${userId}`);
+            const result = await response.json();
+            
+            if(result.success) {
+                renderCards(result.data);
+            }
+        } catch (error) {
+            console.error("Error Fetch:", error);
+            if(notifList) notifList.innerHTML = '<p class="loading-state">Gagal memuat data.</p>';
+        }
+    }
+
+    function renderCards(data) {
+        if (!notifList) return;
+
+        if (!data || data.length === 0) {
+            notifList.innerHTML = '<div class="text-center text-white mt-5 opacity-75">Tidak ada notifikasi.</div>';
+            return;
+        }
+
+        let html = '';
+        data.forEach(item => {
+            const time = new Date(item.time_notified).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'
+            });
+            
+            // Background putih jika belum dibaca, abu-abu jika sudah
+            const bgClass = item.is_read ? 'bg-light opacity-75' : 'bg-white';
+            
+            // Tampilkan Source (Dari Dosen / Koordinator / Info Sistem)
+            const sourceLabel = item.source || 'Info Sistem';
+
+            html += `
+                <div class="notif-card ${bgClass}">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="notif-semester text-primary fw-bold" style="font-size: 0.75rem;">${sourceLabel}</span>
+                        <small class="text-muted" style="font-size: 0.7rem;">${time}</small>
+                    </div>
+                    <div class="notif-title">${item.title}</div>
+                    <div class="notif-desc">${item.content}</div>
+                </div>
+            `;
+        });
+        notifList.innerHTML = html;
+    }
+
+    // --- 5. FUNGSI TANDAI SUDAH DIBACA ---
     async function markAllRead(userId) {
         try {
             await fetch('/api/notifications/mark-read', {
@@ -227,9 +278,9 @@ function initNotificationSystem(currentUserId) {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ user_id: userId })
             });
-            // Hilangkan badge merah di UI secara instan
+            // Update UI Badge langsung (Hilang)
             const badge = document.querySelector('.badge-dot');
             if(badge) badge.style.display = 'none';
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Gagal mark read", e); }
     }
 }
