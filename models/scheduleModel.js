@@ -148,14 +148,13 @@ class ScheduleModel {
         }
     }
 
-    static async getStudentClassSchedule(studentId) {
+    static async getStudentClassSchedule(studentId, dayOfWeek) {
         const query = `
-            SELECT student_sched_id, day_of_week, start_time, end_time, course_name
-            FROM student_schedules
-            WHERE student_id = ? AND is_deleted = FALSE
-            ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), start_time
+            SELECT start_time, end_time 
+            FROM student_schedules 
+            WHERE student_id = ? AND day_of_week = ? AND is_deleted = FALSE
         `;
-        const [rows] = await db.execute(query, [studentId]);
+        const [rows] = await db.execute(query, [studentId, dayOfWeek]);
         return rows;
     }
 
@@ -201,14 +200,40 @@ class ScheduleModel {
     }
 
     static async getLecturerBusySchedules(lecturerId, dayOfWeek) {
+        // Kita anggap dosen sibuk jika schedule_type = 'class'
         const query = `
             SELECT start_time, end_time 
             FROM lecturer_schedules 
             WHERE lecturer_id = ? 
             AND day_of_week = ? 
+            AND schedule_type = 'class' 
             AND is_deleted = FALSE
         `;
         const [rows] = await db.execute(query, [lecturerId, dayOfWeek]);
+        return rows;
+    }
+
+    // 3. Ambil Janji Temu yang SUDAH ADA (Specific Date)
+    // Cek apakah User (Student/Lecturer) sudah punya janji di tanggal tersebut
+    static async getExistingAppointments(userId, userType, date) {
+        let query = '';
+        if (userType === 'student') {
+            query = `
+                SELECT start_time, end_time FROM appointments 
+                WHERE student_id = ? AND DATE(start_time) = ? 
+                AND status NOT IN ('rejected', 'cancelled') AND is_deleted = FALSE
+            `;
+        } else {
+            // Untuk Dosen (Cek via tabel pivot)
+            query = `
+                SELECT a.start_time, a.end_time 
+                FROM appointments a
+                JOIN appointment_lecturers al ON a.app_id = al.app_id
+                WHERE al.lecturer_id = ? AND DATE(a.start_time) = ?
+                AND a.status NOT IN ('rejected', 'cancelled') AND a.is_deleted = FALSE
+            `;
+        }
+        const [rows] = await db.execute(query, [userId, date]);
         return rows;
     }
 }
