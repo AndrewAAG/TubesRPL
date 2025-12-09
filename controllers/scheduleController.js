@@ -198,41 +198,63 @@ exports.saveClassSchedule = async (req, res) => {
 
 
 exports.getAvailableSlots = async (req, res) => {
-    const { lecturerId, studentId, date } = req.query;
+    // 1. Terima Parameter
+    const { lecturerIds, studentId, date } = req.query;
 
     try {
-        if (!lecturerId || !studentId || !date) return res.status(400).json({ success: false, message: 'Parameter tidak lengkap' });
+        // Validasi Input
+        if (!lecturerIds || !studentId || !date) {
+            return res.status(400).json({ success: false, message: 'Parameter tidak lengkap.' });
+        }
 
+        // 2. Persiapan Waktu
         const dateObj = new Date(date);
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayOfWeek = days[dateObj.getDay()];
 
-        // VALIDASI HARI LIBUR (Optional: Blokir Minggu)
+        // Blokir Hari Minggu
         if (dayOfWeek === 'Sunday') {
             return res.json({ success: true, data: [], message: 'Hari Minggu libur.' });
         }
 
-        // 1. AMBIL DATA PENGHALANG (BLOCKERS)
-        // Kita hanya mengambil jadwal SIBUK (Kelas Dosen, Kelas Mhs, Janji Temu)
-        const [lecturerClasses, studentClasses, existingAppts] = await Promise.all([
-            ScheduleModel.getLecturerBusySchedules(lecturerId, dayOfWeek),
-            ScheduleModel.getStudentClassSchedule(studentId, dayOfWeek),
-            ScheduleModel.getExistingAppointments(lecturerId, studentId, date)
+        const lecIdArray = lecturerIds.toString().split(',').map(Number);
+
+        // 3. FETCH DATA BLOCKERS (PENGHALANG)
+        // Kita ambil semua kemungkinan penghalang: Jadwal Dosen DAN Jadwal Mahasiswa
+        
+        // A. Dosen (Sibuk & Appt Existing)
+        const lecturerBusyPromises = lecIdArray.map(id => ScheduleModel.getLecturerBusySchedules(id, dayOfWeek));
+        const lecturerApptPromises = lecIdArray.map(id => ScheduleModel.getExistingAppointments(id, 'lecturer', date));
+
+        // B. Mahasiswa (Kuliah Rutin & Appt Existing)
+        const studentClassPromise = ScheduleModel.getStudentClassSchedule(studentId, dayOfWeek);
+        const studentApptPromise = ScheduleModel.getExistingAppointments(studentId, 'student', date);
+
+        // TUNGGU SEMUA DATA
+        const [
+            lecturerBusyResults,    // Array of Arrays
+            lecturerApptResults,    // Array of Arrays
+            studentClasses,         // Array (Jadwal Kuliah Mahasiswa)
+            studentAppts            // Array (Janji Lain Mahasiswa)
+        ] = await Promise.all([
+            Promise.all(lecturerBusyPromises),
+            Promise.all(lecturerApptPromises),
+            studentClassPromise,
+            studentApptPromise
         ]);
 
-        // 2. DEFINISI JAM KERJA (DEFAULT AVAILABILITY)
-        // Misal: 07:00 sampai 17:00
+        // 4. GENERATE SLOT
         const START_HOUR = 7; 
         const END_HOUR = 17; 
         const SLOT_DURATION = 60; // Menit
-
+        
         let availableSlots = [];
 
-        // Helper Konversi Waktu
-        const toMinutes = (timeStr) => {
-            if(!timeStr) return 0;
-            if (typeof timeStr === 'object') return timeStr.getHours() * 60 + timeStr.getMinutes();
-            const [h, m] = timeStr.split(':').map(Number);
+        // Helper: Format Waktu
+        const toMinutes = (timeInput) => {
+            if(!timeInput) return 0;
+            if (typeof timeInput === 'object') return timeInput.getHours() * 60 + timeInput.getMinutes();
+            const [h, m] = timeInput.split(':').map(Number);
             return h * 60 + m;
         };
 
@@ -242,41 +264,51 @@ exports.getAvailableSlots = async (req, res) => {
             return `${h}.${m}`;
         };
 
-        // 3. GENERATE SLOT BERDASARKAN JAM KERJA
-        // Mulai dari jam 07:00, loop sampai jam 17:00
+        // LOOPING SLOT PER JAM (07:00 - 17:00)
         for (let h = START_HOUR; h < END_HOUR; h++) {
-            const slotStart = h * 60;           // Contoh: 07:00 = 420 menit
-            const slotEnd = slotStart + SLOT_DURATION; // 08:00 = 480 menit
-
+            const slotStart = h * 60; 
+            const slotEnd = slotStart + SLOT_DURATION;
             let isConflict = false;
 
-            // A. Cek Tabrakan dengan Jadwal Mengajar Dosen (Import Koordinator)
-            for (let busy of lecturerClasses) {
-                const bStart = toMinutes(busy.start_time);
-                const bEnd = toMinutes(busy.end_time);
-                // Jika Slot berada DI DALAM waktu sibuk, atau BERIRISAN
-                if (slotStart < bEnd && slotEnd > bStart) { isConflict = true; break; }
-            }
-
-            // B. Cek Tabrakan dengan Kuliah Mahasiswa
-            if (!isConflict) {
-                for (let cls of studentClasses) {
-                    const cStart = toMinutes(cls.start_time);
-                    const cEnd = toMinutes(cls.end_time);
-                    if (slotStart < cEnd && slotEnd > cStart) { isConflict = true; break; }
+            // --- [CRITICAL CHECK 1] CEK JADWAL MAHASISWA DULU ---
+            // Gabungkan Kuliah + Janji Lain Mahasiswa
+            const allStudentBlockers = [...studentClasses, ...studentAppts];
+            
+            for (let block of allStudentBlockers) {
+                const bStart = toMinutes(block.start_time);
+                const bEnd = toMinutes(block.end_time);
+                
+                // Jika Slot ini bertabrakan dengan jadwal mahasiswa -> CONFLICT!
+                if (slotStart < bEnd && slotEnd > bStart) { 
+                    isConflict = true; 
+                    break; // Langsung stop, tidak perlu cek dosen lagi
                 }
             }
 
-            // C. Cek Tabrakan dengan Appointment Lain
+            // --- [CRITICAL CHECK 2] CEK JADWAL SEMUA DOSEN ---
+            // Hanya dijalankan jika mahasiswa kosong di jam tersebut
             if (!isConflict) {
-                for (let appt of existingAppts) {
-                    const aStart = appt.start_time.getHours() * 60 + appt.start_time.getMinutes();
-                    const aEnd = appt.end_time.getHours() * 60 + appt.end_time.getMinutes();
-                    if (slotStart < aEnd && slotEnd > aStart) { isConflict = true; break; }
+                for (let i = 0; i < lecIdArray.length; i++) {
+                    const thisLecturerBlockers = [
+                        ...lecturerBusyResults[i], 
+                        ...lecturerApptResults[i]  
+                    ];
+
+                    for (let block of thisLecturerBlockers) {
+                        const bStart = toMinutes(block.start_time);
+                        const bEnd = toMinutes(block.end_time);
+                        
+                        // Jika Dosen Sibuk -> CONFLICT!
+                        if (slotStart < bEnd && slotEnd > bStart) { 
+                            isConflict = true; 
+                            break; 
+                        }
+                    }
+                    if (isConflict) break; // Jika salah satu dosen sibuk, slot batal
                 }
             }
 
-            // D. Jika Lolos Semua Cek -> Masukkan ke Daftar Available
+            // Jika Lolos Semua Cek -> Slot Available
             if (!isConflict) {
                 availableSlots.push({
                     value: `${toTimeStr(slotStart)} - ${toTimeStr(slotEnd)}`,
@@ -289,8 +321,8 @@ exports.getAvailableSlots = async (req, res) => {
         res.json({ success: true, data: availableSlots });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        console.error("Available Slots Error:", error);
+        res.status(500).json({ success: false, message: 'Gagal memuat slot.' });
     }
 };
 
