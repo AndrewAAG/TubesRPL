@@ -8,5 +8,6 @@ router.get('/student/:studentId', scheduleController.getStudentSchedules);
 router.put('/:id/reschedule', scheduleController.rescheduleAppointment);
 router.get('/classes/:studentId', scheduleController.getClassSchedule);
 router.post('/classes', scheduleController.saveClassSchedule);
+router.get('/available-slots', scheduleController.getAvailableSlots);
 
 module.exports = router;
