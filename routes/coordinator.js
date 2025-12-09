@@ -15,5 +15,7 @@ router.post('/users/student', coordinatorController.updateStudent);
 router.post('/users/lecturer', coordinatorController.updateLecturer);
 router.post('/users/create-student', coordinatorController.createStudent);
 router.post('/users/create-lecturer', coordinatorController.createLecturer);
+router.post('/schedules/import', coordinatorController.importSchedules);
+router.get('/lecturers-list', coordinatorController.getLecturerListForDropdown);
 
 module.exports = router;
