@@ -190,32 +190,38 @@
       async function loadSupervisors(studentId) {
         const select = document.getElementById("supervisorFilter");
 
-        // *SIMULASI FETCH DATA DARI JADWAL* // (Idealnya endpoint: /api/student/supervisors/:id)
-        // Di real implementation, Anda fetch dari endpoint yang return [{id: 1, name: 'Dosen A'}, {id: 2, name: 'Dosen B'}]
+        // Reset dropdown state
+        select.innerHTML = '<option value="" disabled selected>Memuat data...</option>';
 
-        // Disini saya pakai logika simulasi data agar fitur Double TA terlihat
-        // Asumsi: Kita dapat data ini dari backend
-        const dummySupervisors = [
-          { id: 2, name: "Pascal Alfadian" }, // P1
-          { id: 3, name: "Vania Natali" }, // P2 (Misal)
-        ];
-        mySupervisors = dummySupervisors;
+        try {
+          // Panggil API Backend yang baru dibuat
+          const res = await fetch(`/api/schedules/supervisors/${studentId}`);
+          const result = await res.json();
 
-        // Render Options
-        let html = "";
+          if (result.success && result.data.length > 0) {
+            mySupervisors = result.data; // Simpan ke variable global
 
-        // Opsi Per Dosen
-        mySupervisors.forEach((s, index) => {
-          html += `<option value="${s.id}">Bimbingan dgn: ${s.name}</option>`;
-        });
+            let html = '<option value="" disabled selected>- Pilih Filter -</option>';
 
-        // LOGIC DOUBLE TA: Jika ada > 1 pembimbing, tambah opsi gabungan
-        if (mySupervisors.length > 1) {
-          const allIds = mySupervisors.map((s) => s.id).join(",");
-          html += `<option value="${allIds}" class="fw-bold text-primary">★ Gabungan (Sidang/Joint)</option>`;
+            // 1. Opsi Perorangan
+            mySupervisors.forEach((s) => {
+              html += `<option value="${s.id}">Bimbingan dgn: ${s.name}</option>`;
+            });
+
+            // 2. Opsi Gabungan (Hanya jika punya > 1 pembimbing)
+            if (mySupervisors.length > 1) {
+              const allIds = mySupervisors.map((s) => s.id).join(",");
+              html += `<option value="${allIds}" class="fw-bold text-primary">★ Gabungan (Sidang/Joint)</option>`;
+            }
+
+            select.innerHTML = html;
+          } else {
+            select.innerHTML = '<option value="" disabled selected>Tidak ada pembimbing.</option>';
+          }
+        } catch (e) {
+          console.error("Gagal load supervisor", e);
+          select.innerHTML = '<option value="" disabled selected>Error memuat data.</option>';
         }
-
-        select.innerHTML = html;
       }
 
       // --- LOGIC SLOT FINDER ---
