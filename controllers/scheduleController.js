@@ -349,3 +349,19 @@ exports.submitRequest = async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal mengajukan bimbingan.' });
     }
 };
+
+exports.getMySupervisors = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const supervisors = await ScheduleModel.getSupervisorsByStudentId(studentId);
+        
+        if (supervisors.length === 0) {
+            return res.json({ success: true, data: [], message: 'Belum ada pembimbing.' });
+        }
+
+        res.json({ success: true, data: supervisors });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
