@@ -36,7 +36,8 @@ exports.getStudentSchedules = async (req, res) => {
                 location: item.location,
                 link: item.mode === 'online' ? item.location : null, // Asumsi lokasi diisi link jika online
                 notes: item.notes,
-                canReschedule: item.status === 'pending' || item.status === 'approved'
+                canReschedule: item.status === 'pending' || item.status === 'approved',
+                timestamp: item.start_time
             };
         });
 
