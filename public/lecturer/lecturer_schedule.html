@@ -1,208 +1,219 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jadwal Bimbingan - Dosen</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/css/style.css" />
-  </head>
-  <body>
-    <div class="container-fluid h-100">
-      <div class="row h-100">
-        <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
 
-        <div class="col-md-9 col-lg-10 h-100 p-0 position-relative">
-          <div class="main-content-scrollable">
-            <div class="d-flex justify-content-between align-items-center mb-5">
-              <div>
-                <h2 class="fw-bold text-primary mb-1">Jadwal Bimbingan</h2>
-                <p class="text-muted small">Kelola jadwal bimbingan mahasiswa Anda</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jadwal Bimbingan - Dosen</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+  <div class="container-fluid h-100">
+    <div class="row h-100">
+      <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
+
+      <div class="col-md-9 col-lg-10 h-100 p-0 position-relative">
+        <div class="main-content-scrollable">
+          <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+              <h2 class="fw-bold text-primary mb-1">Jadwal Bimbingan</h2>
+              <p class="text-muted small">Kelola jadwal bimbingan mahasiswa Anda</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <button onclick="logout()"
+                class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2"><i
+                  class="fas fa-sign-out-alt"></i> Logout</button>
+              <div class="notification-circle">
+                <i class="fas fa-bell fa-lg text-secondary"></i>
+                <span class="badge-dot">2</span>
               </div>
-              <div class="d-flex align-items-center gap-3">
-                <button class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2"><i class="fas fa-sign-out-alt"></i> Logout</button>
-                <div class="notification-circle">
-                  <i class="fas fa-bell fa-lg text-secondary"></i>
-                  <span class="badge-dot">2</span>
-                </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-2">
+              <select id="student-filter"
+                class="form-select border-0 shadow-sm rounded-pill px-4 py-2 text-secondary fw-bold"
+                style="width: 280px; cursor: pointer">
+                <option value="all">Semua Mahasiswa</option>
+              </select>
+            </div>
+            <button id="btn-add-schedule"
+              class="btn btn-primary-custom rounded-pill px-4 shadow-sm d-flex align-items-center gap-2"><i
+                class="fas fa-plus"></i> Ajukan Bimbingan</button>
+          </div>
+
+          <div id="schedule-container"></div>
+
+          <div style="height: 50px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="alertModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow" style="border-radius: 20px">
+        <div class="modal-body text-center p-4">
+          <div class="mb-3 text-warning"><i class="fas fa-exclamation-circle fa-4x"></i></div>
+          <h5 class="fw-bold mb-2">Pilih Mahasiswa</h5>
+          <p class="text-muted small mb-4">Anda harus memilih mahasiswa spesifik dari dropdown filter.</p>
+          <button type="button" class="btn btn-primary-custom rounded-pill px-5"
+            data-bs-dismiss="modal">Mengerti</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="rescheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow" style="border-radius: 20px">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-primary px-3 pt-3">Atur Ulang Jadwal</h5>
+          <button type="button" class="btn-close me-3 mt-3" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="formReschedule">
+            <input type="hidden" id="rescheduleAppId" />
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Tanggal Baru</label>
+              <input type="date" id="newDate" class="form-control rounded-pill bg-light border-0" required />
+            </div>
+
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label class="form-label small fw-bold text-secondary">Jam Mulai</label>
+                <input type="time" id="newTimeStart" class="form-control rounded-pill bg-light border-0" required />
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label small fw-bold text-secondary">Jam Selesai</label>
+                <input type="time" id="newTimeEnd" class="form-control rounded-pill bg-light border-0" required />
               </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-              <div class="d-flex align-items-center gap-2">
-                <select id="student-filter" class="form-select border-0 shadow-sm rounded-pill px-4 py-2 text-secondary fw-bold" style="width: 280px; cursor: pointer">
-                  <option value="all">Semua Mahasiswa</option>
-                </select>
-              </div>
-              <button id="btn-add-schedule" class="btn btn-primary-custom rounded-pill px-4 shadow-sm d-flex align-items-center gap-2"><i class="fas fa-plus"></i> Ajukan Bimbingan</button>
+            <div class="mb-4">
+              <label class="form-label small fw-bold text-secondary">Alasan Perubahan</label>
+              <textarea id="rescheduleReason" class="form-control bg-light border-0" rows="2"
+                style="border-radius: 15px" placeholder="Contoh: Ada rapat mendadak"></textarea>
             </div>
 
-            <div id="schedule-container"></div>
-
-            <div style="height: 50px"></div>
-          </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary-custom rounded-pill fw-bold">Simpan Perubahan</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="modal fade" id="alertModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow" style="border-radius: 20px">
-          <div class="modal-body text-center p-4">
-            <div class="mb-3 text-warning"><i class="fas fa-exclamation-circle fa-4x"></i></div>
-            <h5 class="fw-bold mb-2">Pilih Mahasiswa</h5>
-            <p class="text-muted small mb-4">Anda harus memilih mahasiswa spesifik dari dropdown filter.</p>
-            <button type="button" class="btn btn-primary-custom rounded-pill px-5" data-bs-dismiss="modal">Mengerti</button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/sidebar.js"></script>
+  <script src="../js/notification.js"></script>
+  <script>
+    // public/js/lecturer_schedule.js
 
-    <div class="modal fade" id="rescheduleModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow" style="border-radius: 20px">
-          <div class="modal-header border-0 pb-0">
-            <h5 class="modal-title fw-bold text-primary px-3 pt-3">Atur Ulang Jadwal</h5>
-            <button type="button" class="btn-close me-3 mt-3" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body p-4">
-            <form id="formReschedule">
-              <input type="hidden" id="rescheduleAppId" />
+    let currentLecturerId = null;
 
-              <div class="mb-3">
-                <label class="form-label small fw-bold text-secondary">Tanggal Baru</label>
-                <input type="date" id="newDate" class="form-control rounded-pill bg-light border-0" required />
-              </div>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Cek Sesi
+      const userSession = JSON.parse(localStorage.getItem("user_session"));
+      if (!userSession || userSession.role !== "lecturer") {
+        window.location.href = "/login";
+        return;
+      }
+      currentLecturerId = userSession.user_id;
 
-              <div class="row">
-                <div class="col-6 mb-3">
-                  <label class="form-label small fw-bold text-secondary">Jam Mulai</label>
-                  <input type="time" id="newTimeStart" class="form-control rounded-pill bg-light border-0" required />
-                </div>
-                <div class="col-6 mb-3">
-                  <label class="form-label small fw-bold text-secondary">Jam Selesai</label>
-                  <input type="time" id="newTimeEnd" class="form-control rounded-pill bg-light border-0" required />
-                </div>
-              </div>
+      // 2. Load Data Awal
+      fetchMyStudents();
+      fetchSchedules("all");
 
-              <div class="mb-4">
-                <label class="form-label small fw-bold text-secondary">Alasan Perubahan</label>
-                <textarea id="rescheduleReason" class="form-control bg-light border-0" rows="2" style="border-radius: 15px" placeholder="Contoh: Ada rapat mendadak"></textarea>
-              </div>
+      // 3. Event Listeners
+      setupEventListeners();
+    });
 
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary-custom rounded-pill fw-bold">Simpan Perubahan</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/sidebar.js"></script>
-    <script>
-      // public/js/lecturer_schedule.js
-
-      let currentLecturerId = null;
-
-      document.addEventListener("DOMContentLoaded", () => {
-        // 1. Cek Sesi
-        const userSession = JSON.parse(localStorage.getItem("user_session"));
-        if (!userSession || userSession.role !== "lecturer") {
-          window.location.href = "/login";
-          return;
-        }
-        currentLecturerId = userSession.user_id;
-
-        // 2. Load Data Awal
-        fetchMyStudents();
-        fetchSchedules("all");
-
-        // 3. Event Listeners
-        setupEventListeners();
+    function setupEventListeners() {
+      // Filter Mahasiswa
+      document.getElementById("student-filter").addEventListener("change", (e) => {
+        fetchSchedules(e.target.value);
       });
 
-      function setupEventListeners() {
-        // Filter Mahasiswa
-        document.getElementById("student-filter").addEventListener("change", (e) => {
-          fetchSchedules(e.target.value);
-        });
-
-        // Tombol Ajukan (New)
-        document.getElementById("btn-add-schedule").addEventListener("click", () => {
-          const selectedStudent = document.getElementById("student-filter").value;
-          if (selectedStudent === "all") {
-            new bootstrap.Modal(document.getElementById("alertModal")).show();
-          } else {
-            alert(`Fitur Tambah Jadwal Baru untuk ID: ${selectedStudent} (Segera Hadir)`);
-          }
-        });
-
-        // Form Reschedule Submit
-        document.getElementById("formReschedule").addEventListener("submit", handleRescheduleSubmit);
-      }
-
-      // --- API FUNCTIONS ---
-
-      async function fetchMyStudents() {
-        try {
-          const response = await fetch(`/api/lecturer/students/${currentLecturerId}`);
-          const result = await response.json();
-
-          const select = document.getElementById("student-filter");
-          // Reset opsi (kecuali 'All')
-          select.innerHTML = '<option value="all">Semua Mahasiswa</option>';
-
-          if (result.success) {
-            result.data.forEach((student) => {
-              const option = document.createElement("option");
-              option.value = student.user_id;
-              option.textContent = `${student.name} (${student.npm})`;
-              select.appendChild(option);
-            });
-          }
-        } catch (error) {
-          console.error("Gagal memuat mahasiswa:", error);
+      // Tombol Ajukan (New)
+      document.getElementById("btn-add-schedule").addEventListener("click", () => {
+        const selectedStudent = document.getElementById("student-filter").value;
+        if (selectedStudent === "all") {
+          new bootstrap.Modal(document.getElementById("alertModal")).show();
+        } else {
+          alert(`Fitur Tambah Jadwal Baru untuk ID: ${selectedStudent} (Segera Hadir)`);
         }
-      }
+      });
 
-      async function fetchSchedules(studentId) {
-        const container = document.getElementById("schedule-container");
-        container.innerHTML = '<div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-2"></div><br>Memuat jadwal...</div>';
+      // Form Reschedule Submit
+      document.getElementById("formReschedule").addEventListener("submit", handleRescheduleSubmit);
+    }
 
-        try {
-          const response = await fetch(`/api/lecturer/schedules/${currentLecturerId}?studentId=${studentId}`);
-          const result = await response.json();
+    // --- API FUNCTIONS ---
 
-          if (result.success) {
-            renderSchedules(result.data);
-          } else {
-            container.innerHTML = `<div class="text-center text-danger">${result.message}</div>`;
-          }
-        } catch (error) {
-          console.error("Error:", error);
+    async function fetchMyStudents() {
+      try {
+        const response = await fetch(`/api/lecturer/students/${currentLecturerId}`);
+        const result = await response.json();
+
+        const select = document.getElementById("student-filter");
+        // Reset opsi (kecuali 'All')
+        select.innerHTML = '<option value="all">Semua Mahasiswa</option>';
+
+        if (result.success) {
+          result.data.forEach((student) => {
+            const option = document.createElement("option");
+            option.value = student.user_id;
+            option.textContent = `${student.name} (${student.npm})`;
+            select.appendChild(option);
+          });
         }
+      } catch (error) {
+        console.error("Gagal memuat mahasiswa:", error);
       }
+    }
 
-      function renderSchedules(data) {
-        const container = document.getElementById("schedule-container");
+    async function fetchSchedules(studentId) {
+      const container = document.getElementById("schedule-container");
+      container.innerHTML = '<div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-2"></div><br>Memuat jadwal...</div>';
 
-        if (data.length === 0) {
-          container.innerHTML = `
+      try {
+        const response = await fetch(`/api/lecturer/schedules/${currentLecturerId}?studentId=${studentId}`);
+        const result = await response.json();
+
+        if (result.success) {
+          renderSchedules(result.data);
+        } else {
+          container.innerHTML = `<div class="text-center text-danger">${result.message}</div>`;
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    }
+
+    function renderSchedules(data) {
+      const container = document.getElementById("schedule-container");
+
+      if (data.length === 0) {
+        container.innerHTML = `
             <div class="text-center py-5 text-muted">
                 <i class="far fa-calendar-times fa-3x mb-3"></i>
                 <p>Tidak ada jadwal bimbingan aktif.</p>
             </div>`;
-          return;
-        }
+        return;
+      }
 
-        let html = "";
-        data.forEach((item) => {
-          const locationDisplay = item.type === "Online" ? (item.link ? `<a href="${item.link}" target="_blank" class="text-decoration-none text-primary fw-bold">${item.link}</a>` : "-") : item.location || "--";
+      let html = "";
+      data.forEach((item) => {
+        const locationDisplay = item.type === "Online" ? (item.link ? `<a href="${item.link}" target="_blank" class="text-decoration-none text-primary fw-bold">${item.link}</a>` : "-") : item.location || "--";
 
-          html += `
+        html += `
         <div class="card-schedule">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <span class="badge-pill-custom">${item.type}</span>
@@ -244,58 +255,63 @@
             </div>
         </div>
         `;
-        });
-        container.innerHTML = html;
-      }
+      });
+      container.innerHTML = html;
+    }
 
-      // --- LOGIC RESCHEDULE ---
+    // --- LOGIC RESCHEDULE ---
 
-      // 1. Buka Modal (Global Function agar bisa dipanggil onclick HTML)
-      window.openRescheduleModal = function (appId) {
-        document.getElementById("rescheduleAppId").value = appId;
-        new bootstrap.Modal(document.getElementById("rescheduleModal")).show();
+    // 1. Buka Modal (Global Function agar bisa dipanggil onclick HTML)
+    window.openRescheduleModal = function (appId) {
+      document.getElementById("rescheduleAppId").value = appId;
+      new bootstrap.Modal(document.getElementById("rescheduleModal")).show();
+    };
+
+    // 2. Handle Submit
+    async function handleRescheduleSubmit(e) {
+      e.preventDefault();
+
+      const btnSubmit = e.target.querySelector('button[type="submit"]');
+      const originalText = btnSubmit.innerText;
+      btnSubmit.innerText = "Menyimpan...";
+      btnSubmit.disabled = true;
+
+      const appId = document.getElementById("rescheduleAppId").value;
+      const bodyData = {
+        date: document.getElementById("newDate").value,
+        timeStart: document.getElementById("newTimeStart").value,
+        timeEnd: document.getElementById("newTimeEnd").value,
+        reason: document.getElementById("rescheduleReason").value,
       };
 
-      // 2. Handle Submit
-      async function handleRescheduleSubmit(e) {
-        e.preventDefault();
+      try {
+        const response = await fetch(`/api/schedules/${appId}/reschedule`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyData),
+        });
 
-        const btnSubmit = e.target.querySelector('button[type="submit"]');
-        const originalText = btnSubmit.innerText;
-        btnSubmit.innerText = "Menyimpan...";
-        btnSubmit.disabled = true;
+        const result = await response.json();
 
-        const appId = document.getElementById("rescheduleAppId").value;
-        const bodyData = {
-          date: document.getElementById("newDate").value,
-          timeStart: document.getElementById("newTimeStart").value,
-          timeEnd: document.getElementById("newTimeEnd").value,
-          reason: document.getElementById("rescheduleReason").value,
-        };
-
-        try {
-          const response = await fetch(`/api/schedules/${appId}/reschedule`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(bodyData),
-          });
-
-          const result = await response.json();
-
-          if (result.success) {
-            alert("Jadwal berhasil diubah!");
-            location.reload(); // Refresh halaman
-          } else {
-            alert("Gagal: " + result.message);
-          }
-        } catch (error) {
-          console.error(error);
-          alert("Terjadi kesalahan saat menyimpan.");
-        } finally {
-          btnSubmit.innerText = originalText;
-          btnSubmit.disabled = false;
+        if (result.success) {
+          alert("Jadwal berhasil diubah!");
+          location.reload(); // Refresh halaman
+        } else {
+          alert("Gagal: " + result.message);
         }
+      } catch (error) {
+        console.error(error);
+        alert("Terjadi kesalahan saat menyimpan.");
+      } finally {
+        btnSubmit.innerText = originalText;
+        btnSubmit.disabled = false;
       }
-    </script>
-  </body>
+    }
+    function logout() {
+      localStorage.clear();
+      window.location.href = "/login";
+    }
+  </script>
+</body>
+
 </html>

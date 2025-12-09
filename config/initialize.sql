@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS lecturer_schedules (
     lecturer_sched_id INT AUTO_INCREMENT PRIMARY KEY,
     lecturer_id INT NOT NULL,
     semester_id INT NOT NULL,
+    schedule_type ENUM('availability', 'class') DEFAULT 'class',
     day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
@@ -105,6 +106,7 @@ CREATE TABLE IF NOT EXISTS student_schedules (
     student_sched_id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     semester_id INT NOT NULL,
+    course_name VARCHAR(100),
     day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
@@ -175,6 +177,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     content TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     time_notified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    source VARCHAR(100) DEFAULT 'Info Sistem',
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -212,7 +215,8 @@ INSERT IGNORE INTO thesis (thesis_id, student_id, semester_id, title, stage_type
 INSERT IGNORE INTO thesis_supervisors (thesis_id, lecturer_id, role) VALUES 
 (1, 2, 'pembimbing_1'), (1, 3, 'pembimbing_2'), -- Andrew dibimbing Pascal & Vania
 (2, 4, 'pembimbing_1'),
-(4, 2, 'pembimbing_1');
+(4, 2, 'pembimbing_1'),
+(5, 2, 'pembimbing_1');
 
 -- 6. JADWAL KULIAH MAHASISWA
 INSERT IGNORE INTO student_schedules (student_id, semester_id, day_of_week, start_time, end_time) VALUES

@@ -8,6 +8,8 @@ const scheduleRoutes = require('./routes/schedule');
 const progressRoutes = require('./routes/progress');
 const evaluationRoutes = require('./routes/evaluation');
 const lecturerRoutes = require('./routes/lecturer');
+const coordinatorRoutes = require('./routes/coordinator');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Middleware
 app.use(cors());
@@ -15,6 +17,7 @@ app.use(cors());
 app.use(express.json());
 // Untuk serve static fils
 app.use(express.static('public', { index: false, extensions: ['css', 'js', 'png', 'jpg'] }));
+// app.use(express.static(path.join(__dirname, 'public')));
 
 
 // ---------------- ROUTING ------------------
@@ -25,6 +28,8 @@ app.use('/api/schedules', scheduleRoutes);
 app.use("/api/progress", progressRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/lecturer', lecturerRoutes);
+app.use('/api/coordinator', coordinatorRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Frontend Page Routs (HTML)
 app.use('/', pageRoutes);

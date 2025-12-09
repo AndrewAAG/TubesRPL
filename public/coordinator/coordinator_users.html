@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manajemen Pengguna - Koordinator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+      /* Custom Tab Style */
+      .nav-tabs .nav-link {
+        color: #6c757d;
+        font-weight: 600;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 12px 25px;
+      }
+      .nav-tabs .nav-link.active {
+        color: #0d6efd;
+        border-bottom: 3px solid #0d6efd;
+        background: transparent;
+      }
+      .nav-tabs .nav-link:hover {
+        border-color: transparent;
+        color: #0d6efd;
+      }
+
+      /* Status Badge */
+      .badge-active {
+        background-color: #d1e7dd;
+        color: #0f5132;
+      }
+      .badge-inactive {
+        background-color: #f8d7da;
+        color: #842029;
+      }
+
+      .table-custom thead th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 700;
+        border-bottom: 2px solid #e9ecef;
+      }
+      .table-custom td {
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid h-100">
+      <div class="row h-100">
+        <div class="col-md-3 col-lg-2 p-0 h-100 sidebar-scrollable" id="sidebar-wrapper"></div>
+
+        <div class="col-md-9 col-lg-10 h-100 p-0 position-relative bg-light">
+          <div class="main-content-scrollable">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h2 class="fw-bold text-primary mb-1">Manajemen Pengguna</h2>
+                <p class="text-muted small">Kelola data mahasiswa dan dosen.</p>
+              </div>
+
+              <div class="d-flex align-items-center gap-3">
+                <div class="input-group" style="width: 250px">
+                  <span class="input-group-text bg-white border-end-0 rounded-start-pill"><i class="fas fa-search text-muted"></i></span>
+                  <input type="text" id="searchInput" class="form-control border-start-0 rounded-end-pill" placeholder="Cari Nama/NPM..." />
+                </div>
+
+                <div class="notification-circle">
+                  <i class="fas fa-bell fa-lg text-secondary"></i>
+                </div>
+              </div>
+            </div>
+
+            <ul class="nav nav-tabs mb-4" id="userTabs" role="tablist">
+              <li class="nav-item">
+                <button class="nav-link active" id="student-tab" data-bs-toggle="tab" data-bs-target="#student-pane" type="button">Mahasiswa</button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" id="lecturer-tab" data-bs-toggle="tab" data-bs-target="#lecturer-pane" type="button">Dosen</button>
+              </li>
+            </ul>
+
+            <div class="tab-content" id="userTabsContent">
+              <div class="tab-pane fade show active" id="student-pane">
+                <div class="d-flex justify-content-end mb-3">
+                  <button class="btn btn-primary-custom rounded-pill px-4 shadow-sm" onclick="openCreateStudentModal()"><i class="fas fa-plus me-2"></i> Tambah Mahasiswa</button>
+                </div>
+                <div class="card-standard p-0 border-0 shadow-sm overflow-hidden">
+                  <div class="table-responsive">
+                    <table class="table table-hover table-custom mb-0">
+                      <thead>
+                        <tr>
+                          <th class="ps-4">NPM</th>
+                          <th>Nama Mahasiswa</th>
+                          <th>Angkatan</th>
+                          <th class="text-center">Status Akun</th>
+                          <th class="text-center">Ambil TA (Sem. Ini)</th>
+                          <th class="text-end pe-4">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="studentTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tab-pane fade" id="lecturer-pane">
+                <div class="d-flex justify-content-end mb-3">
+                  <button class="btn btn-primary-custom rounded-pill px-4 shadow-sm" onclick="openCreateLecturerModal()"><i class="fas fa-plus me-2"></i> Tambah Dosen</button>
+                </div>
+                <div class="card-standard p-0 border-0 shadow-sm overflow-hidden">
+                  <div class="table-responsive">
+                    <table class="table table-hover table-custom mb-0">
+                      <thead>
+                        <tr>
+                          <th class="ps-4">NIP</th>
+                          <th>Nama Dosen</th>
+                          <th>Email</th>
+                          <th class="text-center">Status Akun</th>
+                          <th class="text-end pe-4">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="lecturerTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="height: 50px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="editStudentModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 15px">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="fw-bold">Edit Status Mahasiswa</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <form id="studentForm">
+              <input type="hidden" id="editStudentId" />
+
+              <div class="mb-3">
+                <label class="fw-bold small text-muted">Nama</label>
+                <input type="text" id="editStudentName" class="form-control bg-light" readonly />
+              </div>
+
+              <div class="mb-4">
+                <label class="fw-bold small text-muted">Status Akun (Login)</label>
+                <select id="editAccountStatus" class="form-select">
+                  <option value="active">Active (Bisa Login)</option>
+                  <option value="inactive">Inactive (Dibekukan)</option>
+                </select>
+              </div>
+
+              <hr class="dashed-line" />
+
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="checkTakingTA" />
+                  <label class="form-check-label fw-bold text-primary" for="checkTakingTA">Ambil TA Semester Ini?</label>
+                </div>
+                <small class="text-muted d-block mt-1">Jika dicentang, mahasiswa akan terdaftar di menu Penetapan Pembimbing.</small>
+              </div>
+
+              <div class="mb-3" id="stageWrapper" style="display: none">
+                <label class="fw-bold small text-muted">Tahap TA</label>
+                <select id="editStage" class="form-select">
+                  <option value="TA1">TA1</option>
+                  <option value="TA2">TA2</option>
+                  <option value="TA1-TA2">TA1 & TA2</option>
+                </select>
+              </div>
+
+              <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary-custom rounded-pill fw-bold">Simpan Perubahan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="editLecturerModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 15px">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="fw-bold">Edit Status Dosen</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <form id="lecturerForm">
+              <input type="hidden" id="editLecturerId" />
+
+              <div class="mb-3">
+                <label class="fw-bold small text-muted">Nama</label>
+                <input type="text" id="editLecturerName" class="form-control bg-light" readonly />
+              </div>
+
+              <div class="mb-4">
+                <label class="fw-bold small text-muted">Status Akun</label>
+                <select id="editLecturerStatus" class="form-select">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary-custom rounded-pill fw-bold">Simpan Perubahan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="createStudentModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 15px">
+          <div class="modal-header border-0 pb-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary">Tambah Mahasiswa Baru</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <form id="createStudentForm">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted">Nama Lengkap</label>
+                <input type="text" id="newStudentName" class="form-control rounded-pill bg-light border-0 px-3" required />
+              </div>
+              <div class="mb-3">
+                <label class="small fw-bold text-muted">Email (Username Login)</label>
+                <input type="email" id="newStudentEmail" class="form-control rounded-pill bg-light border-0 px-3" required />
+              </div>
+              <div class="row mb-4">
+                <div class="col-7">
+                  <label class="small fw-bold text-muted">NPM</label>
+                  <input type="text" id="newStudentNpm" class="form-control rounded-pill bg-light border-0 px-3" required />
+                </div>
+                <div class="col-5">
+                  <label class="small fw-bold text-muted">Angkatan</label>
+                  <input type="number" id="newStudentCohort" class="form-control rounded-pill bg-light border-0 px-3" placeholder="202X" required />
+                </div>
+              </div>
+              <div class="alert alert-info py-2 small"><i class="fas fa-info-circle me-1"></i> Password default: <b>123456</b></div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary-custom rounded-pill fw-bold">Buat Akun Mahasiswa</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="createLecturerModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 15px">
+          <div class="modal-header border-0 pb-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary">Tambah Dosen Baru</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <form id="createLecturerForm">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted">Nama Lengkap & Gelar</label>
+                <input type="text" id="newLecturerName" class="form-control rounded-pill bg-light border-0 px-3" required />
+              </div>
+              <div class="row mb-4">
+                <div class="col-6">
+                  <label class="small fw-bold text-muted">Email</label>
+                  <input type="email" id="newLecturerEmail" class="form-control rounded-pill bg-light border-0 px-3" required />
+                </div>
+                <div class="col-6">
+                  <label class="small fw-bold text-muted">NIP / NIDN</label>
+                  <input type="text" id="newLecturerNip" class="form-control rounded-pill bg-light border-0 px-3" required />
+                </div>
+              </div>
+              <div class="alert alert-info py-2 small"><i class="fas fa-info-circle me-1"></i> Password default: <b>123456</b></div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary-custom rounded-pill fw-bold">Buat Akun Dosen</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sidebar.js"></script>
+    <script>
+      // public/js/coordinator_users.js
+
+      let allStudents = [];
+      let allLecturers = [];
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // 1. Cek Sesi
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        if (!userSession || userSession.role !== "coordinator") {
+          window.location.href = "/login";
+          return;
+        }
+
+        fetchUsers();
+
+        // Search Listener
+        document.getElementById("searchInput").addEventListener("keyup", handleSearch);
+
+        document.getElementById("createStudentForm").addEventListener("submit", handleCreateStudent);
+        document.getElementById("createLecturerForm").addEventListener("submit", handleCreateLecturer);
+
+        // Modal Events
+        document.getElementById("checkTakingTA").addEventListener("change", toggleStageSelect);
+        document.getElementById("studentForm").addEventListener("submit", saveStudent);
+        document.getElementById("lecturerForm").addEventListener("submit", saveLecturer);
+      });
+
+      async function fetchUsers() {
+        try {
+          const res = await fetch("/api/coordinator/users");
+          const result = await res.json();
+          if (result.success) {
+            allStudents = result.data.students;
+            allLecturers = result.data.lecturers;
+            renderStudentTable(allStudents);
+            renderLecturerTable(allLecturers);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // --- RENDER TABLES ---
+
+      function renderStudentTable(data) {
+        const tbody = document.getElementById("studentTableBody");
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Tidak ada data mahasiswa.</td></tr>';
+          return;
+        }
+
+        let html = "";
+        data.forEach((s) => {
+          const statusBadge = s.account_status === "active" ? '<span class="badge badge-active rounded-pill px-3">Active</span>' : '<span class="badge badge-inactive rounded-pill px-3">Inactive</span>';
+
+          // --- LOGIC BADGE BARU ---
+          let taBadge = '<span class="text-muted small">-</span>';
+
+          if (s.is_taking_ta) {
+            if (s.current_stage === "TA1-TA2") {
+              // Warna Ungu untuk Double TA agar menonjol
+              taBadge = `<span class="badge rounded-pill px-3" style="background-color: #6f42c1;">TA1 & TA2</span>`;
+            } else {
+              // Warna Biru Default
+              taBadge = `<span class="badge bg-primary rounded-pill px-3">${s.current_stage}</span>`;
+            }
+          }
+          // ------------------------
+
+          html += `
+        <tr>
+            <td class="ps-4 text-muted font-monospace">${s.npm}</td>
+            <td class="fw-bold text-dark">${s.name}</td>
+            <td>${s.cohort_year}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-center">${taBadge}</td>
+            <td class="text-end pe-4">
+                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openStudentModal(${s.user_id})">
+                    <i class="fas fa-cog me-1"></i> Atur
+                </button>
+            </td>
+        </tr>`;
+        });
+        tbody.innerHTML = html;
+      }
+
+      function renderLecturerTable(data) {
+        const tbody = document.getElementById("lecturerTableBody");
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data dosen.</td></tr>';
+          return;
+        }
+
+        let html = "";
+        data.forEach((l) => {
+          const statusBadge = l.account_status === "active" ? '<span class="badge badge-active rounded-pill px-3">Active</span>' : '<span class="badge badge-inactive rounded-pill px-3">Inactive</span>';
+
+          html += `
+        <tr>
+            <td class="ps-4 text-muted font-monospace">${l.nip}</td>
+            <td class="fw-bold text-dark">${l.name}</td>
+            <td>${l.email}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-end pe-4">
+                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openLecturerModal(${l.user_id})">
+                    <i class="fas fa-cog me-1"></i> Atur
+                </button>
+            </td>
+        </tr>`;
+        });
+        tbody.innerHTML = html;
+      }
+
+      // --- SEARCH LOGIC ---
+
+      function handleSearch(e) {
+        const keyword = e.target.value.toLowerCase();
+
+        const filteredStudents = allStudents.filter((s) => s.name.toLowerCase().includes(keyword) || s.npm.includes(keyword));
+        const filteredLecturers = allLecturers.filter((l) => l.name.toLowerCase().includes(keyword) || l.nip.includes(keyword));
+
+        renderStudentTable(filteredStudents);
+        renderLecturerTable(filteredLecturers);
+      }
+
+      // --- MODAL LOGIC STUDENT ---
+
+      function openStudentModal(id) {
+        const s = allStudents.find((item) => item.user_id === id);
+        if (!s) return;
+
+        document.getElementById("editStudentId").value = s.user_id;
+        document.getElementById("editStudentName").value = s.name;
+        document.getElementById("editAccountStatus").value = s.account_status;
+
+        const checkTA = document.getElementById("checkTakingTA");
+        checkTA.checked = s.is_taking_ta > 0;
+
+        const stageSel = document.getElementById("editStage");
+        stageSel.value = s.current_stage || "TA1";
+
+        toggleStageSelect(); // Show/Hide dropdown stage sesuai checkbox
+
+        new bootstrap.Modal(document.getElementById("editStudentModal")).show();
+      }
+
+      function toggleStageSelect() {
+        const isChecked = document.getElementById("checkTakingTA").checked;
+        const wrapper = document.getElementById("stageWrapper");
+        wrapper.style.display = isChecked ? "block" : "none";
+      }
+
+      async function saveStudent(e) {
+        e.preventDefault();
+        const body = {
+          studentId: document.getElementById("editStudentId").value,
+          status: document.getElementById("editAccountStatus").value,
+          isTakingTa: document.getElementById("checkTakingTA").checked,
+          stage: document.getElementById("editStage").value,
+        };
+
+        try {
+          const res = await fetch("/api/coordinator/users/student", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const result = await res.json();
+          if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById("editStudentModal")).hide();
+            fetchUsers();
+          } else alert(result.message);
+        } catch (e) {
+          alert("Error koneksi");
+        }
+      }
+
+      // --- MODAL LOGIC LECTURER ---
+
+      function openLecturerModal(id) {
+        const l = allLecturers.find((item) => item.user_id === id);
+        if (!l) return;
+
+        document.getElementById("editLecturerId").value = l.user_id;
+        document.getElementById("editLecturerName").value = l.name;
+        document.getElementById("editLecturerStatus").value = l.account_status;
+
+        new bootstrap.Modal(document.getElementById("editLecturerModal")).show();
+      }
+
+      async function saveLecturer(e) {
+        e.preventDefault();
+        const body = {
+          lecturerId: document.getElementById("editLecturerId").value,
+          status: document.getElementById("editLecturerStatus").value,
+        };
+
+        try {
+          const res = await fetch("/api/coordinator/users/lecturer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if ((await res.json()).success) {
+            bootstrap.Modal.getInstance(document.getElementById("editLecturerModal")).hide();
+            fetchUsers();
+          }
+        } catch (e) {
+          alert("Error koneksi");
+        }
+      }
+
+      // --- LOGIC CREATE STUDENT ---
+
+      function openCreateStudentModal() {
+        document.getElementById("createStudentForm").reset(); // Reset form agar kosong
+        new bootstrap.Modal(document.getElementById("createStudentModal")).show();
+      }
+
+      async function handleCreateStudent(e) {
+        e.preventDefault();
+
+        // Ambil value dari input
+        const body = {
+          name: document.getElementById("newStudentName").value,
+          email: document.getElementById("newStudentEmail").value,
+          npm: document.getElementById("newStudentNpm").value,
+          cohort_year: document.getElementById("newStudentCohort").value,
+        };
+
+        // UI Feedback (Disable tombol biar gak diklik 2x)
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Memproses...";
+
+        try {
+          const res = await fetch("/api/coordinator/users/create-student", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            alert("Akun mahasiswa berhasil dibuat!");
+            // Tutup Modal
+            bootstrap.Modal.getInstance(document.getElementById("createStudentModal")).hide();
+            // Refresh Tabel agar data baru muncul
+            fetchUsers();
+          } else {
+            alert(result.message);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Gagal koneksi server");
+        } finally {
+          // Balikin tombol seperti semula
+          btn.disabled = false;
+          btn.innerText = originalText;
+        }
+      }
+
+      // --- LOGIC CREATE LECTURER ---
+
+      function openCreateLecturerModal() {
+        document.getElementById("createLecturerForm").reset();
+        new bootstrap.Modal(document.getElementById("createLecturerModal")).show();
+      }
+
+      async function handleCreateLecturer(e) {
+        e.preventDefault();
+
+        const body = {
+          name: document.getElementById("newLecturerName").value,
+          email: document.getElementById("newLecturerEmail").value,
+          nip: document.getElementById("newLecturerNip").value,
+        };
+
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Memproses...";
+
+        try {
+          const res = await fetch("/api/coordinator/users/create-lecturer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            alert("Akun dosen berhasil dibuat!");
+            bootstrap.Modal.getInstance(document.getElementById("createLecturerModal")).hide();
+            fetchUsers();
+          } else {
+            alert(result.message);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Gagal koneksi server");
+        } finally {
+          btn.disabled = false;
+          btn.innerText = originalText;
+        }
+      }
+    </script>
+  </body>
+</html>

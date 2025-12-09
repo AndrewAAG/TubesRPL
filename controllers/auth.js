@@ -33,7 +33,7 @@ exports.login = async (req, res) => {
                 targetUrl = '/lecturer/schedule';
                 break;
             case 'coordinator':
-                targetUrl = '/coordinator';
+                targetUrl = '/coordinator/schedule';
                 break;
             default:
                 // Role tidak dikenal

@@ -1,15 +1,17 @@
 <div class="notification-overlay" id="notificationOverlay">
-    <div class="notification-container">
-        <div class="notif-header">
-            <button class="close-btn" id="closeNotif">&larr;</button>
+    
+    <div class="notification-drawer">
+        
+        <div class="drawer-header align-items-center">
+            <h5 class="fw-bold m-0 text-white">Notifikasi</h5>
+            <button id="closeNotif" class="btn-close-custom">
+                <i class="fas fa-arrow-right"></i>
+            </button>
         </div>
 
-        <div class="notif-content" id="notifList">
-            <p style="text-align:center; padding:10px;">Memuat notifikasi...</p>
-        </div>
-
-        <div class="notif-footer">
-            <button class="add-btn">+ Tambah Pengumuman</button>
+        <div id="broadcastContainer" class="px-3 mb-3"></div>
+        <div id="notifList" class="drawer-body px-3">
+            <div class="loading-state">Memuat notifikasi...</div>
         </div>
     </div>
 </div>
