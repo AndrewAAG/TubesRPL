@@ -1,4 +1,5 @@
 const NotificationModel = require('../models/notificationModel');
+const db = require('../config/db');
 
 // 1. Get List Notifikasi
 exports.getUserNotifications = async (req, res) => {
@@ -38,21 +39,37 @@ exports.markAsRead = async (req, res) => {
 
 exports.sendBroadcast = async (req, res) => {
     try {
-        const { senderId, targetType, title, message } = req.body;
+        // Terima specificStudentId dari frontend
+        const { senderId, targetType, title, message, specificStudentId } = req.body;
 
         if (!targetType || !title || !message) {
             return res.status(400).json({ success: false, message: 'Data tidak lengkap' });
         }
 
-        // 1. Dapatkan List ID Penerima
-        const recipientIds = await NotificationModel.getTargetUserIds(targetType, senderId);
-
-        if (recipientIds.length === 0) {
-            return res.json({ success: false, message: 'Tidak ada user yang sesuai kriteria target.' });
+        // 1. TENTUKAN NAMA PENGIRIM (SOURCE)
+        let sourceName = 'Info Sistem';
+        
+        // Ambil info sender dari DB
+        const [senderRows] = await db.execute('SELECT name, role FROM users WHERE user_id = ?', [senderId]);
+        
+        if (senderRows.length > 0) {
+            const sender = senderRows[0];
+            if (sender.role === 'coordinator') {
+                sourceName = 'Koordinator TA';
+            } else if (sender.role === 'lecturer') {
+                sourceName = `Dosen: ${sender.name}`; // Format: "Dosen: Pascal Alfadian"
+            }
         }
 
-        // 2. Lakukan Bulk Insert
-        await NotificationModel.createBulk(recipientIds, title, message);
+        // 2. DAPATKAN LIST PENERIMA
+        const recipientIds = await NotificationModel.getTargetUserIds(targetType, senderId, specificStudentId);
+
+        if (recipientIds.length === 0) {
+            return res.json({ success: false, message: 'Tidak ada user target yang ditemukan.' });
+        }
+
+        // 3. KIRIM DENGAN SOURCE NAME
+        await NotificationModel.createBulk(recipientIds, title, message, sourceName);
 
         res.json({ success: true, message: `Berhasil mengirim ke ${recipientIds.length} pengguna.` });
 

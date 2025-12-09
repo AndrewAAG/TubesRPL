@@ -227,10 +227,19 @@ body, html {
 }
 
 /* 3. Header & Tombol Close */
+
 .drawer-header {
     display: flex;
-    justify-content: flex-end; /* Tombol ada di kanan atas */
+    justify-content: space-between; 
+    align-items: center;
     margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.2); 
+}
+
+.drawer-header h5 {
+    margin-right: 20px; 
+    flex-grow: 1;      
 }
 
 .btn-close-custom {
