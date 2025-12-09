@@ -36,7 +36,8 @@ exports.getStudentSchedules = async (req, res) => {
                 location: item.location,
                 link: item.mode === 'online' ? item.location : null, // Asumsi lokasi diisi link jika online
                 notes: item.notes,
-                canReschedule: item.status === 'pending' || item.status === 'approved'
+                canReschedule: item.status === 'pending' || item.status === 'approved',
+                timestamp: item.start_time
             };
         });
 
@@ -147,3 +148,50 @@ function mapStatusToLabel(status) {
         default: return status;
     }
 }
+
+exports.getClassSchedule = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const data = await ScheduleModel.getStudentClassSchedule(studentId);
+        
+        // Mapping Hari Inggris -> Indo
+        const dayMap = { 'Monday':'Senin', 'Tuesday':'Selasa', 'Wednesday':'Rabu', 'Thursday':'Kamis', 'Friday':'Jumat', 'Saturday':'Sabtu', 'Sunday':'Minggu' };
+        
+        const formatted = data.map(d => ({
+            id: d.student_sched_id,
+            day: dayMap[d.day_of_week], // Ke Indo
+            course: d.course_name || 'Kuliah',
+            start: d.start_time.substring(0, 5), // Ambil HH:mm
+            end: d.end_time.substring(0, 5)
+        }));
+
+        res.json({ success: true, data: formatted });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+// POST: Simpan Jadwal (Dari Input Manual/CSV Preview)
+exports.saveClassSchedule = async (req, res) => {
+    try {
+        const { studentId, schedules } = req.body; 
+        // schedules array: [{day: 'Senin', course: '...', start: '07:00', end: '10:00'}, ...]
+
+        // Mapping Hari Indo -> Inggris untuk DB
+        const dayMap = { 'Senin':'Monday', 'Selasa':'Tuesday', 'Rabu':'Wednesday', 'Kamis':'Thursday', 'Jumat':'Friday', 'Sabtu':'Saturday', 'Minggu':'Sunday' };
+
+        const dbSchedules = schedules.map(s => ({
+            day: dayMap[s.day] || 'Monday',
+            course: s.course,
+            start: s.start,
+            end: s.end
+        }));
+
+        await ScheduleModel.replaceStudentSchedule(studentId, dbSchedules);
+        res.json({ success: true, message: 'Jadwal berhasil disimpan!' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Gagal menyimpan jadwal.' });
+    }
+};
