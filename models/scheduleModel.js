@@ -199,6 +199,18 @@ class ScheduleModel {
             connection.release();
         }
     }
+
+    static async getLecturerBusySchedules(lecturerId, dayOfWeek) {
+        const query = `
+            SELECT start_time, end_time 
+            FROM lecturer_schedules 
+            WHERE lecturer_id = ? 
+            AND day_of_week = ? 
+            AND is_deleted = FALSE
+        `;
+        const [rows] = await db.execute(query, [lecturerId, dayOfWeek]);
+        return rows;
+    }
 }
 
 module.exports = ScheduleModel;

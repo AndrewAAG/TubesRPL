@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS lecturer_schedules (
     lecturer_sched_id INT AUTO_INCREMENT PRIMARY KEY,
     lecturer_id INT NOT NULL,
     semester_id INT NOT NULL,
+    schedule_type ENUM('availability', 'class') DEFAULT 'class',
     day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
