@@ -51,7 +51,7 @@ function renderSidebar() {
                 <i class="fas fa-calendar-check me-3 text-center" style="width: 20px;"></i> Manajemen Semester
             </a>
             </a>
-            <a class="nav-item-custom ${isActive('coordinator/import')}" href="#">
+            <a class="nav-item-custom ${isActive('coordinator/import')}" href="/coordinator/import">
                 <i class="fas fa-file-import me-3 text-center" style="width: 20px;"></i> Import Jadwal
             </a>
             <a class="nav-item-custom ${isActive('coordinator/assignments')}" href="/coordinator/assignments">
