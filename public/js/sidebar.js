@@ -82,7 +82,7 @@ function renderSidebar() {
             <a class="nav-item-custom ${isActive('student/evaluation')}" href="/student/evaluation">
                 <i class="fas fa-file-signature me-3 text-center" style="width: 20px;"></i> Evaluasi Bimbingan
             </a>
-            <a class="nav-item-custom ${isActive('student/import')}" href="#">
+            <a class="nav-item-custom ${isActive('student/import')}" href="/student/import">
                 <i class="fas fa-file-import me-3 text-center" style="width: 20px;"></i> Import Jadwal
             </a>
         `;
