@@ -25,6 +25,7 @@ router.get('/lecturer/evaluation', (req, res) => res.sendFile(publicPath('/lectu
 router.get('/lecturer/evaluation/detail', (req, res) => res.sendFile(publicPath('/lecturer/lecturer_evaluation_detail.html')));
 router.get('/lecturer/students', (req, res) => res.sendFile(publicPath('/lecturer/lecturer_students.html')));
 router.get('/lecturer/student-progress', (req, res) => res.sendFile(publicPath('/lecturer/lecturer_student_progress.html')));
+router.get('/lecturer/calendar', (req, res) => res.sendFile(publicPath('/lecturer/lecturer_calendar.html')));
 
 // --- KOORDINATOR ---
 router.get('/coordinator/schedule', (req, res) => res.sendFile(publicPath('/coordinator/coordinator_schedules.html')));

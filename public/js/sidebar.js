@@ -25,8 +25,8 @@ function renderSidebar() {
             <a class="nav-item-custom ${isActive("lecturer/schedule")}" href="/lecturer/schedule">
                 <i class="fas fa-calendar-alt me-3 text-center" style="width: 20px;"></i> Jadwal Bimbingan
             </a>
-            <a class="nav-item-custom ${isActive("lecturer/calendar")}" href="#">
-                <i class="far fa-calendar me-3 text-center" style="width: 20px;"></i> Kalender
+            <a class="nav-item-custom ${isActive("lecturer/calendar")}" href="/lecturer/calendar">
+                <i class="far fa-calendar-check me-3 text-center" style="width: 20px;"></i> Kalender
             </a>
             <a class="nav-item-custom ${isActive("lecturer/requests")}" href="/lecturer/requests">
                 <i class="fas fa-envelope-open-text me-3 text-center" style="width: 20px;"></i> Pengajuan Bimbingan
@@ -79,8 +79,8 @@ function renderSidebar() {
                 <i class="fas fa-chart-line me-3 text-center" style="width: 20px;"></i> Pelacak Kemajuan
             </a>
             <a class="nav-item-custom ${isActive("student/calendar")}" href="/student/calendar">
-    <i class="far fa-calendar-alt me-3 text-center" style="width: 20px;"></i> Kalender
-</a>
+                <i class="far fa-calendar-alt me-3 text-center" style="width: 20px;"></i> Kalender
+            </a>
             <a class="nav-item-custom ${isActive("student/evaluation")}" href="/student/evaluation">
                 <i class="fas fa-file-signature me-3 text-center" style="width: 20px;"></i> Evaluasi Bimbingan
             </a>

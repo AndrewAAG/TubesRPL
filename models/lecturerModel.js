@@ -78,6 +78,19 @@ class LecturerModel {
         const [rows] = await db.execute(query, [lecturerId]);
         return rows;
     }
+
+    static async getStudentSupervisors(studentId) {
+        const query = `
+            SELECT l.user_id, u.name 
+            FROM thesis t
+            JOIN thesis_supervisors ts ON t.thesis_id = ts.thesis_id
+            JOIN lecturers l ON ts.lecturer_id = l.user_id
+            JOIN users u ON l.user_id = u.user_id
+            WHERE t.student_id = ?
+        `;
+        const [rows] = await db.execute(query, [studentId]);
+        return rows;
+    }
 }
 
 module.exports = LecturerModel;
