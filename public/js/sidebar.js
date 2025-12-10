@@ -96,7 +96,7 @@ function renderSidebar() {
 
   const sidebarHTML = `
         <div class="text-center pt-5 pb-4 px-4">
-            <img src="/images/LogoUnparHitam.png" 
+            <img src="/images/LogoUnparPutih.png" 
                  alt="Logo UNPAR" 
                  style="width: 100%; max-width: 180px; height: auto;"> 
         </div>
