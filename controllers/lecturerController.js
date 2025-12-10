@@ -121,3 +121,13 @@ exports.getStudentList = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
+
+exports.getStudentSupervisors = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const supervisors = await LecturerModel.getStudentSupervisors(studentId);
+        res.json({ success: true, data: supervisors });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};

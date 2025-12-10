@@ -185,3 +185,43 @@ exports.createLecturer = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || 'Gagal membuat akun.' });
     }
 };
+
+exports.importSchedules = async (req, res) => {
+    try {
+        const { schedules } = req.body;
+        // Format: [{ email, day, start, end, description }, ...]
+
+        // Mapping Hari Indo -> Inggris DB
+        const dayMap = { 'Senin':'Monday', 'Selasa':'Tuesday', 'Rabu':'Wednesday', 'Kamis':'Thursday', 'Jumat':'Friday', 'Sabtu':'Saturday', 'Minggu':'Sunday' };
+
+        const normalizedData = schedules.map(s => ({
+            email: s.email ? s.email.trim() : '',
+            day: dayMap[s.day] || 'Monday',
+            start: s.start,
+            end: s.end,
+            description: s.description
+        }));
+
+        const result = await CoordinatorModel.importLecturerSchedules(normalizedData);
+
+        res.json({ 
+            success: true, 
+            message: `Sukses import ${result.successCount} jadwal. Gagal: ${result.failedCount}.`,
+            details: result 
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Gagal import jadwal.' });
+    }
+};
+
+// Reuse: Kita perlu list dosen untuk dropdown manual input
+exports.getLecturerListForDropdown = async (req, res) => {
+    try {
+        const list = await CoordinatorModel.getAllLecturers(); // Method yang sudah dibuat sebelumnya
+        res.json({ success: true, data: list });
+    } catch(e) {
+        res.status(500).json({ success: false });
+    }
+};

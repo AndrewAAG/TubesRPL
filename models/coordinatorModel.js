@@ -141,7 +141,11 @@ class CoordinatorModel {
     // AMBIL LIST SEMUA DOSEN (Untuk Dropdown)
     static async getAllLecturers() {
         const query = `
-            SELECT l.user_id, u.name, l.nip 
+            SELECT 
+                l.user_id, 
+                u.name, 
+                u.email,  -- <--- WAJIB ADA INI
+                l.nip
             FROM lecturers l
             JOIN users u ON l.user_id = u.user_id
             WHERE u.status = 'active'
@@ -343,6 +347,76 @@ class CoordinatorModel {
             if (error.code === 'ER_DUP_ENTRY') {
                 throw new Error('Email atau NIP sudah terdaftar.');
             }
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    static async importLecturerSchedules(schedules) {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        
+        try {
+            // 1. Ambil Semester Aktif
+            const [sem] = await connection.execute(`SELECT semester_id FROM semesters WHERE is_active = TRUE LIMIT 1`);
+            const activeSemId = sem.length > 0 ? sem[0].semester_id : 1;
+
+            // 2. Ambil Mapping Email -> User ID untuk semua Dosen
+            // Tujuannya agar kita tidak query satu-satu di dalam loop
+            const [lecturers] = await connection.execute(`
+                SELECT u.email, l.user_id 
+                FROM lecturers l
+                JOIN users u ON l.user_id = u.user_id
+            `);
+            
+            // Buat Map: {'dosenA@unpar.ac.id': 101, ...}
+            const emailToIdMap = {};
+            lecturers.forEach(l => emailToIdMap[l.email] = l.user_id);
+
+            // 3. Filter & Siapkan Data Insert
+            const validInserts = [];
+            const invalidEmails = [];
+
+            for (const s of schedules) {
+                const lecturerId = emailToIdMap[s.email]; // Cari ID by Email
+                
+                if (lecturerId) {
+                    validInserts.push([
+                        lecturerId, 
+                        activeSemId, 
+                        'class',
+                        s.day, 
+                        s.start, 
+                        s.end, 
+                        s.description || 'Available', 
+                        true // is_recurring
+                    ]);
+                } else {
+                    invalidEmails.push(s.email);
+                }
+            }
+
+            // 4. Lakukan Bulk Insert
+            if (validInserts.length > 0) {
+                // Query: INSERT INTO ... VALUES ? (mysql2 support bulk insert via nested arrays)
+                const query = `
+                    INSERT INTO lecturer_schedules 
+                    (lecturer_id, semester_id, schedule_type, day_of_week, start_time, end_time, description, is_recurring) 
+                    VALUES ?
+                `;
+                await connection.query(query, [validInserts]);
+            }
+
+            await connection.commit();
+            return { 
+                successCount: validInserts.length, 
+                failedCount: invalidEmails.length,
+                failedEmails: [...new Set(invalidEmails)] // Unique email
+            };
+
+        } catch (error) {
+            await connection.rollback();
             throw error;
         } finally {
             connection.release();

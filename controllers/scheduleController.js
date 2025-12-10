@@ -406,6 +406,7 @@ exports.getAvailableSlots = async (req, res) => {
 
 exports.submitRequest = async (req, res) => {
     try {
+
         const { studentId, lecturerIds, date, timeRange, mode, location, notes } = req.body;
 
         // [DEBUG] Cek apa yang dikirim Frontend
@@ -415,11 +416,13 @@ exports.submitRequest = async (req, res) => {
         // Frontend mengirim string "1,2" -> Split jadi array [1, 2]
         const lecIdArray = lecturerIds.toString().split(',').map(item => parseInt(item.trim()));
 
-        console.log("Array Dosen yang akan disimpan:", lecIdArray); // Harusnya [1, 2] jika gabungan
+        console.log("Array Dosen yang akan disimpan:", lecIdArray); // Harusnya [1, 2] jika gabung
+        // Parse timeRange "13.00 - 14.00" -> start & end
 
         const [startStr, endStr] = timeRange.split(' - ');
         const startDateTime = `${date} ${startStr.replace('.', ':')}:00`;
         const endDateTime = `${date} ${endStr.replace('.', ':')}:00`;
+
 
         // Simpan ke DB
         const appId = await ScheduleModel.createRequest({
