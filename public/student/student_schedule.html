@@ -22,10 +22,8 @@
               </div>
 
               <div class="d-flex align-items-center gap-3">
-                <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-                <div class="notification-circle" id="bell-icon" style="cursor: pointer;">
+                <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <div class="notification-circle" id="bell-icon" style="cursor: pointer">
                   <i class="fas fa-bell fa-lg text-secondary"></i>
                   <span class="badge-dot">2</span>
                 </div>
@@ -33,8 +31,7 @@
             </div>
 
             <div class="d-flex justify-content-end mb-4">
-              <button class="btn btn-primary-custom rounded-pill px-4 shadow-sm d-flex align-items-center" onclick="window.location.href='/student/request'"> <i class="fas fa-plus me-2"></i> Ajukan Bimbingan
-              </button>
+              <button class="btn btn-primary-custom rounded-pill px-4 shadow-sm d-flex align-items-center" onclick="openRequestModal()"><i class="fas fa-plus me-2"></i> Ajukan Bimbingan</button>
             </div>
 
             <div id="schedule-container"></div>
@@ -45,16 +42,122 @@
       </div>
     </div>
 
+    <div id="notification-component-placeholder"></div>
+
+    <div class="modal fade" id="requestModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 15px">
+          <div class="modal-header border-0 pb-0 pt-4 px-4">
+            <h5 class="fw-bold">Pengajuan Bimbingan</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body p-4">
+            <form id="requestForm">
+              <div class="mb-3">
+                <label class="fw-bold small mb-1">Bimbingan Dengan:</label>
+                <select id="reqSupervisor" class="form-select rounded-pill" required>
+                  <option value="">Loading...</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="fw-bold small mb-1">Tanggal</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 rounded-start-pill"><i class="far fa-calendar"></i></span>
+                  <input type="date" id="reqDate" class="form-control border-start-0 rounded-end-pill" required />
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="fw-bold small mb-1">Waktu</label>
+                <div id="slotsContainer" class="border rounded p-2" style="max-height: 150px; overflow-y: auto; background: #fff">
+                  <small class="text-muted d-block text-center py-3"> Pilih pembimbing & tanggal untuk melihat jam tersedia. </small>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="fw-bold small mb-2 d-block">Mode Bimbingan</label>
+                <div class="d-flex gap-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reqMode" id="modeOnline" value="online" checked onchange="toggleLocation()" />
+                    <label class="form-check-label" for="modeOnline">Online</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reqMode" id="modeOnsite" value="onsite" onchange="toggleLocation()" />
+                    <label class="form-check-label" for="modeOnsite">On Site</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="fw-bold small mb-1" id="labelLocation">Link Meeting / Lokasi</label>
+                <input type="text" id="reqLocation" class="form-control rounded-3" required />
+              </div>
+
+              <div class="mb-4">
+                <label class="fw-bold small mb-1">Catatan untuk Dosen</label>
+                <textarea id="reqNotes" class="form-control rounded-3" rows="3"></textarea>
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary-custom rounded-pill py-2 fw-bold">Ajukan Bimbingan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="rescheduleModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 15px">
+          <div class="modal-header border-0 pb-0 pt-4 px-4">
+            <h5 class="fw-bold text-warning">Reschedule Bimbingan</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <form id="rescheduleForm">
+              <input type="hidden" id="reschAppId" /> <input type="hidden" id="reschLecturerIds" />
+              <div class="mb-3">
+                <label class="fw-bold small mb-1">Tanggal Baru</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0 rounded-start-pill"><i class="far fa-calendar"></i></span>
+                  <input type="date" id="reschDate" class="form-control border-start-0 rounded-end-pill" required />
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="fw-bold small mb-1">Waktu Tersedia</label>
+                <div id="reschSlotsContainer" class="border rounded p-2" style="max-height: 150px; overflow-y: auto; background: #fff">
+                  <small class="text-muted d-block text-center py-3">Pilih tanggal baru.</small>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="fw-bold small mb-1">Alasan Perubahan</label>
+                <textarea id="reschReason" class="form-control rounded-3" rows="2" placeholder="Cth: Sakit, ada urusan keluarga..." required></textarea>
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-warning rounded-pill py-2 fw-bold text-white">Ajukan Perubahan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/sidebar.js"></script>
     <script src="../js/notification.js"></script>
-    
+
     <script>
       // [REVISI] Script Tanggal Dinamis
       function setDynamicDate() {
-          const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-          const today = new Date().toLocaleDateString('id-ID', dateOptions);
-          document.getElementById('currentDateDisplay').innerText = today;
+        const dateOptions = { weekday: "long", day: "numeric", month: "long", year: "numeric" };
+        const today = new Date().toLocaleDateString("id-ID", dateOptions);
+        document.getElementById("currentDateDisplay").innerText = today;
       }
 
       async function fetchSchedules() {
@@ -94,9 +197,9 @@
 
         // [REVISI] Filter hanya jadwal yang belum lewat (Masa Depan)
         // Kita gunakan field 'timestamp' yang baru kita tambahkan di controller
-        const upcomingSchedules = schedules.filter(item => {
-            const itemDate = new Date(item.timestamp);
-            return itemDate >= now; // Hanya tampilkan jika waktu >= sekarang
+        const upcomingSchedules = schedules.filter((item) => {
+          const itemDate = new Date(item.timestamp);
+          return itemDate >= now; // Hanya tampilkan jika waktu >= sekarang
         });
 
         if (!upcomingSchedules || upcomingSchedules.length === 0) {
@@ -123,7 +226,7 @@
           }
 
           const btnClass = item.canReschedule ? "btn-primary-custom" : "btn-light text-muted border-0";
-          const btnAttr = item.canReschedule ? "" : "disabled";
+          const btnAttr = item.canReschedule ? `onclick="openReschModal(${item.id}, '${item.lecturer_ids_str}')"` : "disabled";
 
           htmlContent += `
         <div class="card-schedule">
@@ -183,6 +286,259 @@
       document.addEventListener("DOMContentLoaded", () => {
         setDynamicDate(); // Set tanggal saat load
         fetchSchedules();
+      });
+
+      async function openRequestModal() {
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        if (!userSession) return;
+
+        // 1. Reset Form
+        document.getElementById("requestForm").reset();
+        document.getElementById("slotsContainer").innerHTML = '<small class="text-muted d-block text-center py-3">Pilih tanggal.</small>';
+
+        // 2. Load Supervisor
+        await loadSupervisorsForModal(userSession.user_id);
+
+        // 3. Tampilkan Modal
+        new bootstrap.Modal(document.getElementById("requestModal")).show();
+      }
+
+      async function loadSupervisorsForModal(studentId) {
+        const select = document.getElementById("reqSupervisor");
+        select.innerHTML = '<option value="">Memuat...</option>';
+
+        try {
+          const res = await fetch(`/api/schedules/supervisors/${studentId}`);
+          const result = await res.json();
+
+          if (result.success && result.data.length > 0) {
+            let html = '<option value="" disabled selected>- Pilih Target -</option>';
+
+            // Opsi Individual
+            result.data.forEach((s) => {
+              html += `<option value="${s.id}">Bimbingan dgn: ${s.name}</option>`;
+            });
+
+            // Opsi Gabungan (Jika Double TA)
+            if (result.data.length > 1) {
+              const allIds = result.data.map((s) => s.id).join(",");
+              html += `<option value="${allIds}" class="fw-bold text-primary">★ Gabungan (Sidang/Joint)</option>`;
+            }
+            select.innerHTML = html;
+          } else {
+            select.innerHTML = '<option value="">Belum ada pembimbing</option>';
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Event Listener: Cari Slot saat Tanggal/Dosen berubah
+      const fetchSlotListener = async () => {
+        const lecturerIds = document.getElementById("reqSupervisor").value;
+        const date = document.getElementById("reqDate").value;
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        const container = document.getElementById("slotsContainer");
+
+        if (!lecturerIds || !date) return;
+
+        container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+
+        try {
+          const res = await fetch(`/api/schedules/available-slots?lecturerIds=${lecturerIds}&studentId=${userSession.user_id}&date=${date}`);
+          const result = await res.json();
+
+          if (result.success && result.data.length > 0) {
+            let html = "";
+            result.data.forEach((slot) => {
+              html += `
+                <div class="form-check border-bottom py-2">
+                    <input class="form-check-input" type="radio" name="reqSlot" value="${slot.value}" id="slot_${slot.start}" required>
+                    <label class="form-check-label w-100" for="slot_${slot.start}" style="cursor:pointer">
+                        ${slot.value}
+                    </label>
+                </div>`;
+            });
+            container.innerHTML = html;
+          } else {
+            container.innerHTML = `<div class="text-center text-danger small py-2">
+                <i class="far fa-times-circle mb-1"></i><br>
+                Tidak ada jadwal yang cocok di tanggal ini.<br>
+                (Cek jadwal kuliah Anda atau jadwal dosen)
+            </div>`;
+          }
+        } catch (e) {
+          container.innerHTML = "Error koneksi.";
+        }
+      };
+
+      document.getElementById("reqDate").addEventListener("change", fetchSlotListener);
+      document.getElementById("reqSupervisor").addEventListener("change", fetchSlotListener);
+
+      // Helper UI: Lokasi vs Link
+      function toggleLocation() {
+        const isOnline = document.getElementById("modeOnline").checked;
+        const input = document.getElementById("reqLocation");
+        const label = document.getElementById("labelLocation");
+
+        if (isOnline) {
+          label.innerText = "Link Meeting";
+          input.placeholder = "https://meet.google.com/...";
+        } else {
+          label.innerText = "Ruangan / Lokasi";
+          input.placeholder = "Contoh: Ruang 9.2.1";
+        }
+      }
+
+      // Submit Request
+      document.getElementById("requestForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        const lecturerIds = document.getElementById("reqSupervisor").value;
+        const slotEl = document.querySelector('input[name="reqSlot"]:checked');
+
+        if (!slotEl) {
+          alert("Silakan pilih slot waktu.");
+          return;
+        }
+
+        const body = {
+          studentId: userSession.user_id,
+          lecturerIds: lecturerIds, // "1" atau "1,2"
+          date: document.getElementById("reqDate").value,
+          timeRange: slotEl.value,
+          mode: document.querySelector('input[name="reqMode"]:checked').value,
+          location: document.getElementById("reqLocation").value,
+          notes: document.getElementById("reqNotes").value,
+        };
+
+        const btn = e.target.querySelector('button[type="submit"]');
+        const oriText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Mengirim...";
+
+        try {
+          const res = await fetch("/api/schedules/request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            alert("Pengajuan berhasil dikirim!");
+            bootstrap.Modal.getInstance(document.getElementById("requestModal")).hide();
+            fetchSchedules(); // Refresh list jadwal utama
+          } else {
+            alert(result.message);
+          }
+        } catch (err) {
+          alert("Gagal mengirim data.");
+        } finally {
+          btn.disabled = false;
+          btn.innerText = oriText;
+        }
+      });
+
+      // --- LOGIC RESCHEDULE ---
+
+      // 1. Buka Modal
+      // (Dipanggil dari tombol di renderSchedules: onclick="openReschModal(12, '1,2')")
+      function openReschModal(appId, lecturerIdsStr) {
+        document.getElementById("rescheduleForm").reset();
+        document.getElementById("reschSlotsContainer").innerHTML = '<small class="text-muted d-block text-center py-3">Pilih tanggal baru.</small>';
+
+        // Set Hidden Values
+        document.getElementById("reschAppId").value = appId;
+        document.getElementById("reschLecturerIds").value = lecturerIdsStr; // String "1" atau "1,2"
+
+        new bootstrap.Modal(document.getElementById("rescheduleModal")).show();
+      }
+
+      // 2. Cari Slot Baru (Saat tanggal diganti)
+      document.getElementById("reschDate").addEventListener("change", async function () {
+        const date = this.value;
+        const lecturerIds = document.getElementById("reschLecturerIds").value; // Ambil dari hidden input
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+        const container = document.getElementById("reschSlotsContainer");
+
+        if (!date) return;
+
+        container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-warning"></div></div>';
+
+        try {
+          // Reuse API Available Slots yang sudah canggih (Joint/Individual)
+          const res = await fetch(`/api/schedules/available-slots?lecturerIds=${lecturerIds}&studentId=${userSession.user_id}&date=${date}`);
+          const result = await res.json();
+
+          if (result.success && result.data.length > 0) {
+            let html = "";
+            result.data.forEach((slot) => {
+              html += `
+                <div class="form-check border-bottom py-2">
+                    <input class="form-check-input" type="radio" name="reschSlot" value="${slot.value}" id="rs_${slot.start}" required>
+                    <label class="form-check-label w-100" for="rs_${slot.start}" style="cursor:pointer">
+                        ${slot.value}
+                    </label>
+                </div>`;
+            });
+            container.innerHTML = html;
+          } else {
+            container.innerHTML = `<div class="text-center text-danger small py-2">Tidak ada slot kosong di tanggal ini.</div>`;
+          }
+        } catch (e) {
+          container.innerHTML = "Error koneksi.";
+        }
+      });
+
+      // 3. Submit Reschedule
+      document.getElementById("rescheduleForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const appId = document.getElementById("reschAppId").value;
+        const date = document.getElementById("reschDate").value;
+        const slotEl = document.querySelector('input[name="reschSlot"]:checked');
+        const reason = document.getElementById("reschReason").value;
+        const userSession = JSON.parse(localStorage.getItem("user_session"));
+
+        if (!slotEl) {
+          alert("Pilih waktu baru.");
+          return;
+        }
+
+        const btn = e.target.querySelector('button[type="submit"]');
+        const oriText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Memproses...";
+
+        try {
+          const res = await fetch(`/api/schedules/${appId}/reschedule`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              date: date,
+              timeRange: slotEl.value,
+              reason: reason,
+              userId: userSession.user_id,
+              triggerBy: "student",
+            }),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            alert(result.message);
+            bootstrap.Modal.getInstance(document.getElementById("rescheduleModal")).hide();
+            fetchSchedules(); // Refresh tabel utama
+          } else {
+            alert(result.message);
+          }
+        } catch (err) {
+          alert("Error koneksi.");
+        } finally {
+          btn.disabled = false;
+          btn.innerText = oriText;
+        }
       });
 
       function logout() {
