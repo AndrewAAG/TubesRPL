@@ -321,6 +321,48 @@ class ScheduleModel {
         `, [appId]);
         return rows.map(r => r.lecturer_id);
     }
+
+    // [BARU] Create Appointment Langsung Approved (Single / Bulk)
+    static async createLecturerAppointment(appointmentsData) {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // Kita loop data (bisa isinya 1 item untuk single, atau banyak untuk recurring)
+            for (const data of appointmentsData) {
+                
+                // 1. Insert ke tabel appointments (Status langsung APPROVED)
+                const [resApp] = await connection.execute(`
+                    INSERT INTO appointments (student_id, start_time, end_time, location, mode, origin, status, notes)
+                    VALUES (?, ?, ?, ?, ?, 'lecturer_invite', 'approved', ?)
+                `, [data.studentId, data.startTime, data.endTime, data.location, data.mode, data.notes]);
+                
+                const appId = resApp.insertId;
+
+                // 2. Insert ke tabel pivot (Dosen langsung ACCEPTED)
+                // Kita perlu memasukkan Dosen Penginisiasi (accepted)
+                // DAN Partner Dosen jika ada (pending/accepted? idealnya pending, tapi sesuai request "auto approve", 
+                // biasanya jadwal bimbingan dosen A tidak butuh approval dosen B kecuali sidang.
+                // Untuk MVP ini, kita masukkan Dosen Penginisiasi saja dulu sebagai 'accepted'.
+                
+                await connection.execute(`
+                    INSERT INTO appointment_lecturers (app_id, lecturer_id, response_status)
+                    VALUES (?, ?, 'accepted')
+                `, [appId, data.lecturerId]);
+                
+                // (Opsional) Jika sistem Double TA mewajibkan partner tahu, 
+                // Anda bisa menambahkan logic insert partner di sini.
+            }
+
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
 }
 
 module.exports = ScheduleModel;
