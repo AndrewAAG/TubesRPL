@@ -307,6 +307,52 @@
         btnSubmit.disabled = false;
       }
     }
+
+    async function respondToRequest(appId, action) {
+    const userSession = JSON.parse(localStorage.getItem('user_session'));
+    
+    // Validasi Sesi
+    if (!userSession || userSession.role !== 'lecturer') {
+        alert("Sesi tidak valid.");
+        return;
+    }
+
+    let reason = '';
+    if (action === 'reject') {
+        reason = prompt("Masukkan alasan penolakan:");
+        if (reason === null) return; // Batal jika cancel
+    }
+
+    // UI Feedback (Opsional: Ubah teks tombol jadi Loading...)
+    
+    try {
+        const res = await fetch(`/api/schedules/request/${appId}/respond`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: action, // 'approve' atau 'reject'
+                reason: reason,
+                lecturerId: userSession.user_id // <--- [WAJIB ADA INI]
+            })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            alert(result.message); 
+            // result.message akan berisi: 
+            // "Respon tercatat. Menunggu dosen lain." ATAU "Keputusan Final: Disetujui"
+            
+            fetchSchedules(); // Refresh tabel
+        } else {
+            alert("Gagal: " + result.message);
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Terjadi kesalahan koneksi.");
+    }
+}
+
     function logout() {
       localStorage.clear();
       window.location.href = "/login";
