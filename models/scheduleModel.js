@@ -100,6 +100,53 @@ class ScheduleModel {
         }
     }
 
+    static async getById(appId) {
+        try {
+            // Mengambil detail appointment berdasarkan app_id
+            const query = `
+                SELECT 
+                    a.*,
+                    GROUP_CONCAT(u.name SEPARATOR ', ') as lecturers
+                FROM appointments a
+                LEFT JOIN appointment_lecturers al ON a.app_id = al.app_id
+                LEFT JOIN lecturers l ON al.lecturer_id = l.user_id
+                LEFT JOIN users u ON l.user_id = u.user_id
+                WHERE a.app_id = ? AND a.is_deleted = FALSE
+                GROUP BY a.app_id
+            `;
+            const [rows] = await db.execute(query, [appId]);
+            return rows.length > 0 ? rows[0] : null;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getByLecturerId(lecturerId) {
+        try {
+            // Mengambil semua janji temu (pending, approved, rejected) untuk dosen tertentu
+            const query = `
+                SELECT 
+                    a.app_id as id,
+                    a.start_time,
+                    a.end_time,
+                    a.status,
+                    a.notes,
+                    u.name as student_name,
+                    s.npm
+                FROM appointments a
+                JOIN appointment_lecturers al ON a.app_id = al.app_id
+                JOIN students s ON a.student_id = s.user_id
+                JOIN users u ON s.user_id = u.user_id
+                WHERE al.lecturer_id = ? AND a.is_deleted = FALSE
+                ORDER BY a.start_time DESC
+            `;
+            const [rows] = await db.execute(query, [lecturerId]);
+            return rows;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     // UPDATE STATUS (APPROVE/REJECT)
     static async updateStatus(appId, status, notes = null, lecturerId = null) { // Tambah param lecturerId
         const connection = await db.getConnection();
