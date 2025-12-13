@@ -16,7 +16,7 @@ exports.getEvaluations = async (req, res) => {
             return {
                 id: item.id,
                 type: item.mode === 'online' ? 'Online' : 'On Site',
-                status: 'Selesai', // Hardcode karena query pasti completed
+                status: 'Completed', // Hardcode karena query pasti completed
                 date: formattedDate,
                 lecturers: item.lecturers ? item.lecturers.split(', ') : [],
                 location: item.mode === 'online' ? '--' : item.location,
@@ -82,7 +82,7 @@ exports.getLecturerHistory = async (req, res) => {
             student_name: item.student_name,
             location: item.location,
             mode: item.mode === 'online' ? 'Online' : 'On Site',
-            status: 'Selesai',
+            status: 'Completed',
             npm: item.npm // Untuk filter
         }));
 

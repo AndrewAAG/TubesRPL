@@ -6,6 +6,8 @@ function renderSidebar() {
     npm: "NPM",
   };
 
+  console.log(userSession);
+
   const role = userSession.role;
   const path = window.location.pathname;
 
@@ -102,8 +104,6 @@ function renderSidebar() {
         <div class="text-center px-3 mb-4">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="rounded-circle profile-img" alt="Profile">
             <h6 class="fw-bold text-white mb-1">${userSession.name}</h6>
-            <small class="text-white-50 d-block">${userRoleLabel}</small>
-            <small class="text-white-50 d-block">${userIdentity}</small>
         </div>
 
         <div class="nav-custom">
