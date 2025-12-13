@@ -14,7 +14,6 @@ class ProgressModel {
                 LIMIT 1
             `, [studentId]);
 
-            // Default jika data belum lengkap (misal mahasiswa belum ambil tesis)
             if (infoRows.length === 0) {
                 return { 
                     stage: 'Unknown', 
@@ -25,9 +24,13 @@ class ProgressModel {
             }
 
             const { stage_type, uts_start_date } = infoRows[0];
+            
+            // [REVISI] Siapkan variabel waktu untuk logika konteks
+            const today = new Date();
+            const utsDate = new Date(uts_start_date);
+            const isPastUTS = today > utsDate;
 
-            // 2. HITUNG JUMLAH BIMBINGAN (Pre-UTS & Total)
-            // Query ini menghitung bimbingan yang statusnya 'completed' saja
+            // 2. HITUNG JUMLAH BIMBINGAN
             const [countRows] = await db.execute(`
                 SELECT 
                     COUNT(CASE WHEN start_time < ? THEN 1 END) as pre_uts_count,
@@ -39,66 +42,71 @@ class ProgressModel {
             const preUtsCount = parseInt(countRows[0].pre_uts_count) || 0;
             const totalCount = parseInt(countRows[0].total_count) || 0;
 
-            // 3. LOGIKA PENENTUAN SYARAT (RULE BASE)
+            // 3. LOGIKA PENENTUAN SYARAT (REVISI LOGIC)
             let targetPre, targetTotal;
             let barConfigs = [];
-            let overallStatus = 'Belum Memenuhi';
-            let statusColor = 'warning'; // Default kuning
+            
+            // Default Status
+            let overallStatus = 'Belum Memenuhi Target';
+            let statusColor = 'warning'; // Default Kuning
 
-            // --- LOGIC: TA1 ---
+            // Set Target Berdasarkan Tipe TA
             if (stage_type === 'TA1') {
-                targetPre = 2; 
-                targetTotal = 4; // 2 Pre + 2 Post = 4 Total
-
-                // Syarat: Pre >= 2 DAN Total >= 4
-                if (preUtsCount >= targetPre && totalCount >= targetTotal) {
-                    overallStatus = 'Memenuhi Syarat';
-                    statusColor = 'success';
-                }
-
-                barConfigs.push({
-                    label: 'Progress TA1',
-                    current: totalCount,
-                    target: targetTotal,
-                    percent: Math.min((totalCount / targetTotal) * 100, 100)
-                });
-
-            // --- LOGIC: TA2 ---
+                targetPre = 2; targetTotal = 4;
             } else if (stage_type === 'TA2') {
-                targetPre = 3;
-                targetTotal = 6; // 3 Pre + 3 Post = 6 Total
+                targetPre = 3; targetTotal = 6;
+            } else { // Double
+                targetPre = 4; targetTotal = 10;
+            }
 
-                if (preUtsCount >= targetPre && totalCount >= targetTotal) {
-                    overallStatus = 'Memenuhi Syarat';
-                    statusColor = 'success';
-                }
+            // --- [INTI PERBAIKAN LOGIKA] ---
 
+            // KONDISI 1: SUDAH SIAP SIDANG (SEMPURNA)
+            // Syarat: Pre terpenuhi DAN Total terpenuhi
+            if (preUtsCount >= targetPre && totalCount >= targetTotal) {
+                overallStatus = 'Siap Sidang (Memenuhi Syarat)';
+                statusColor = 'success'; // Hijau
+            }
+            
+            // KONDISI 2: ON TRACK / IDEAL (SUDAH LEWAT UTS)
+            // Syarat: Hari ini lewat UTS, Pre terpenuhi, TAPI Total belum sampai.
+            // Ini kondisi "Mahasiswa Ideal" yang sedang mengejar UAS.
+            else if (isPastUTS && preUtsCount >= targetPre) {
+                overallStatus = 'On Track (Target UTS Terpenuhi)';
+                statusColor = 'primary'; // Biru (Menandakan progres bagus, tapi belum finish)
+            }
+
+            // KONDISI 3: KRITIS (GAGAL SYARAT PRE-UTS)
+            // Syarat: Hari ini lewat UTS, TAPI Pre-UTS kurang.
+            // Tidak peduli totalnya berapa, jika pre-UTS kurang saat UTS sudah lewat, dia gagal.
+            else if (isPastUTS && preUtsCount < targetPre) {
+                overallStatus = 'Tidak Lulus (Kurang Bimbingan Pre-UTS)';
+                statusColor = 'danger'; // Merah
+            }
+
+            // KONDISI 4: MASIH MENGEJAR UTS (SEBELUM UTS)
+            // Syarat: Hari ini belum UTS. Status tetap warning (kuning) karena belum ada yang final.
+            else if (!isPastUTS) {
+                overallStatus = 'Sedang Berjalan (Mengejar UTS)';
+                statusColor = 'warning'; 
+            }
+
+            // --- KONFIGURASI BAR CHART ---
+            if (stage_type !== 'Double') {
                 barConfigs.push({
-                    label: 'Progress TA2',
+                    label: `Progress ${stage_type}`,
                     current: totalCount,
                     target: targetTotal,
                     percent: Math.min((totalCount / targetTotal) * 100, 100)
                 });
-
-            // --- LOGIC: DOUBLE TA (TA1 & TA2) ---
-            } else { 
-                targetPre = 4;   // Syarat Pre-UTS (TA1 harus selesai)
-                targetTotal = 10; // Syarat Total (TA1(4) + TA2(6) = 10)
-
-                if (preUtsCount >= targetPre && totalCount >= targetTotal) {
-                    overallStatus = 'Memenuhi Syarat';
-                    statusColor = 'success';
-                }
-
-                // Bar 1: Mengejar target Pre-UTS (Target 4)
+            } else {
+                // Double TA (Split Bar)
                 barConfigs.push({
                     label: 'Tahap 1 (Target UTS)',
-                    current: preUtsCount, 
+                    current: preUtsCount,
                     target: 4,
                     percent: Math.min((preUtsCount / 4) * 100, 100)
                 });
-
-                // Bar 2: Mengejar target Total (Target 10)
                 barConfigs.push({
                     label: 'Tahap 2 (Target UAS)',
                     current: totalCount,
@@ -107,24 +115,11 @@ class ProgressModel {
                 });
             }
 
-            // Jika status masih Warning tapi Total sudah cukup, berarti kurang di Pre-UTS
-            // Kita bisa ubah statusnya jadi Merah (Gagal) karena Pre-UTS tidak bisa diulang
-            if (statusColor === 'warning' && totalCount >= targetTotal && preUtsCount < targetPre) {
-                // Cek apakah hari ini sudah lewat UTS?
-                const today = new Date();
-                const utsDate = new Date(uts_start_date);
-                
-                if (today > utsDate) {
-                    overallStatus = 'Tidak Lulus (Kurang Bimbingan Pre-UTS)';
-                    statusColor = 'danger';
-                }
-            }
-
             return {
                 overallStatus,
                 statusColor,
                 bars: barConfigs,
-                debug: { pre: preUtsCount, total: totalCount, type: stage_type } // Untuk cek di console
+                debug: { pre: preUtsCount, total: totalCount, type: stage_type, isPastUTS } 
             };
 
         } catch (error) {

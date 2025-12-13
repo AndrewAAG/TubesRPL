@@ -1,5 +1,7 @@
 const LecturerModel = require('../models/lecturerModel');
 const ScheduleModel = require('../models/scheduleModel');
+const ProgressModel = require('../models/progressModel');
+
 
 // Ambil List Mahasiswa untuk Dropdown
 exports.getMyStudents = async (req, res) => {
@@ -83,41 +85,52 @@ exports.respondToRequest = async (req, res) => {
 };
 
 exports.getStudentList = async (req, res) => {
+    const { lecturerId } = req.params;
+
+    if (!lecturerId) {
+        return res.status(400).json({ success: false, message: 'ID Dosen tidak ditemukan.' });
+    }
+
     try {
-        const { lecturerId } = req.params;
+        // 1. AMBIL DATA DARI MODEL (Tidak perlu raw SQL lagi di sini)
+        // Method ini sudah mengembalikan: student_id, npm, name, stage_type, last_mentoring
         const students = await LecturerModel.getSupervisedStudents(lecturerId);
 
-        const formattedData = students.map(s => {
-            // 1. Format Tanggal
-            let lastDate = '-';
-            if (s.last_mentoring) {
-                lastDate = new Date(s.last_mentoring).toLocaleDateString('id-ID', {
-                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-                });
-            }
+        if (students.length === 0) {
+             return res.json({ success: true, data: [] });
+        }
 
-            // 2. Logic Status Kelayakan (Sederhana)
-            // Rule: TA1 butuh min 4x, TA2 butuh min 6x (sesuai requirement awal)
-            let isEligible = false;
-            let minReq = s.stage_type === 'TA2' ? 6 : 4;
+        // 2. HITUNG PROGRESS & STATUS (Logic Eligibility)
+        // Kita tetap memanggil ProgressModel untuk mendapatkan logika warna (Merah/Biru/Hijau)
+        const detailedStudents = await Promise.all(students.map(async (s) => {
             
-            if (s.total_count >= minReq) isEligible = true;
+            // Panggil ProgressModel untuk menentukan status kelulusan
+            const progress = await ProgressModel.getProgressSummary(s.student_id);
+
+            // Format Tanggal Bimbingan Terakhir
+            let lastMentoring = '-';
+            if (s.last_mentoring) {
+                const d = new Date(s.last_mentoring);
+                lastMentoring = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            }
 
             return {
                 student_id: s.student_id,
                 name: s.name,
                 npm: s.npm,
-                stage: s.stage_type, // TA1 atau TA2
-                last_mentoring: lastDate,
-                total_count: s.total_count,
-                status_label: isEligible ? 'Memenuhi Syarat' : 'Belum Memenuhi',
-                status_class: isEligible ? 'status-approved' : 'status-pending' // Hijau vs Kuning
+                stage: s.stage_type, // Sesuai kolom di LecturerModel
+                last_mentoring: lastMentoring,
+                
+                // Ambil hasil perhitungan cerdas dari ProgressModel
+                status_label: progress.overallStatus, 
+                status_color: progress.statusColor    
             };
-        });
+        }));
 
-        res.json({ success: true, data: formattedData });
+        res.json({ success: true, data: detailedStudents });
+
     } catch (error) {
-        console.error(error);
+        console.error("Get Student List Error:", error);
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 };

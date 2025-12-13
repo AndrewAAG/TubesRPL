@@ -7,7 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/style.css" />
     <style>
-      /* Styling khusus Card Mahasiswa sesuai Screenshot */
+      /* Styling khusus Card Mahasiswa */
       .student-card {
         background: white;
         border-radius: 20px;
@@ -67,30 +67,6 @@
         color: white;
         box-shadow: 0 4px 10px rgba(66, 133, 244, 0.3);
       }
-
-      /* Status Badge Override */
-      .badge-status-ok {
-        background-color: #d1e7dd; /* Hijau Soft */
-        color: #0f5132; /* Hijau Gelap */
-        padding: 8px 20px;
-        border-radius: 30px;
-        font-weight: 700;
-        font-size: 0.85rem;
-        display: inline-block;
-        border: 1px solid #badbcc;
-      }
-
-      /* Kuning/Orange untuk Belum Memenuhi */
-      .badge-status-warning {
-        background-color: #fff3cd; /* Kuning Soft */
-        color: #856404; /* Coklat/Kuning Gelap */
-        padding: 8px 20px;
-        border-radius: 30px;
-        font-weight: 700;
-        font-size: 0.85rem;
-        display: inline-block;
-        border: 1px solid #ffeeba;
-      }
     </style>
   </head>
   <body>
@@ -104,8 +80,9 @@
               <h2 class="fw-bold text-primary mb-1">Daftar Mahasiswa</h2>
 
               <div class="d-flex align-items-center gap-3">
-                <div class="notification-circle">
+                <div class="notification-circle" id="bell-icon">
                   <i class="fas fa-bell fa-lg text-secondary"></i>
+                  <span class="badge-dot"></span>
                 </div>
               </div>
             </div>
@@ -128,14 +105,11 @@
     <script src="../js/notification.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        // 1. Cek Sesi
         const userSession = JSON.parse(localStorage.getItem("user_session"));
         if (!userSession || userSession.role !== "lecturer") {
           window.location.href = "/login";
           return;
         }
-
-        // 2. Fetch Data
         fetchStudents(userSession.user_id);
       });
 
@@ -169,15 +143,28 @@
 
         let html = "";
         data.forEach((s) => {
-          // --- PERBAIKAN LOGIC WARNA BADGE ---
+          
+          // --- [UPDATE] LOGIC WARNA MENGGUNAKAN BOOTSTRAP UTILITY ---
+          // Backend mengirim: 'success', 'primary', 'warning', 'danger'
+          const colorKey = s.status_color || 'secondary';
+          let badgeClass = '';
 
-          // Cek apakah status PERSIS "Memenuhi Syarat"
-          let badgeClass = "";
-
-          if (s.status_label === "Memenuhi Syarat") {
-            badgeClass = "badge-status-ok"; // Hijau
-          } else {
-            badgeClass = "badge-status-warning"; // Kuning (Belum Memenuhi)
+          // Mapping ke Bootstrap Utility Classes
+          switch(colorKey) {
+            case 'success': // Siap Sidang (Hijau)
+                badgeClass = 'bg-success-subtle text-success border border-success-subtle';
+                break;
+            case 'primary': // On Track (Biru)
+                badgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+                break;
+            case 'danger':  // Tidak Lulus (Merah)
+                badgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+                break;
+            case 'warning': // Sedang Berjalan (Kuning)
+                badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+                break;
+            default:
+                badgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
           }
 
           html += `
@@ -195,8 +182,8 @@
 
                     <div>
                         <div class="label-sm mb-1">Status Kepatuhan</div>
-                        <div class="${badgeClass}">
-                            ${s.status_label}
+                        <div class="badge rounded-pill px-4 py-2 fs-6 fw-bold ${badgeClass}">
+                            ${s.status_label || 'Status Tidak Diketahui'}
                         </div>
                     </div>
                 </div>
@@ -221,7 +208,6 @@
       }
 
       function goToDetail(studentId) {
-        // Arahkan ke halaman detail progress dengan query parameter ID
         window.location.href = `/lecturer/student-progress?id=${studentId}`;
       }
 
