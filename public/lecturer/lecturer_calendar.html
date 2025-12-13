@@ -2,7 +2,7 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <title>Kalender Dosen - Bimbingan</title>
+    <title>Kalender Dosen - Cek Ketersediaan</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
     <style>
-      /* Reuse style dari student calendar */
       #calendar {
         background: white;
         padding: 20px;
@@ -25,25 +24,33 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
         height: 100%;
       }
-      .btn-slot {
-        border: 1px solid #dee2e6;
-        background: #fff;
-        color: #333;
-        transition: 0.2s;
-        font-size: 0.9rem;
-      }
-      .btn-slot:hover,
-      .btn-slot.active {
-        background: #e7f1ff;
-        border-color: #0d6efd;
-        color: #0d6efd;
-        font-weight: 600;
-      }
+      
       .fc-day-today {
         background-color: #f0f7ff !important;
       }
-      .fc-event {
+      .fc-daygrid-day {
         cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .fc-daygrid-day:hover {
+        background-color: #f8f9fa;
+      }
+
+      /* Tampilan Slot Statis (Read Only) */
+      .slot-item {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 8px;
+        text-align: center;
+        transition: all 0.2s;
+      }
+      .slot-item:hover {
+        background-color: #e9ecef;
+        transform: translateY(-2px);
       }
     </style>
   </head>
@@ -55,10 +62,13 @@
         <div class="col-md-9 col-lg-10 h-100 p-0 position-relative bg-light">
           <div class="main-content-scrollable">
             <div class="d-flex justify-content-between align-items-center mb-4">
-              <h2 class="fw-bold text-primary mb-1">Kalender Bimbingan</h2>
+              <h2 class="fw-bold text-primary mb-1">Cek Ketersediaan</h2>
 
               <div class="d-flex align-items-center gap-3">
-                <div class="notification-circle"><i class="fas fa-bell fa-lg text-secondary"></i></div>
+                <div class="notification-circle" id="bell-icon">
+                    <i class="fas fa-bell fa-lg text-secondary"></i>
+                    <span class="badge-dot"></span>
+                </div>
               </div>
             </div>
 
@@ -69,10 +79,10 @@
 
               <div class="col-lg-4">
                 <div class="card-filter">
-                  <h5 class="fw-bold mb-3"><i class="fas fa-user-graduate me-2 text-primary"></i>Cek Jadwal Mahasiswa</h5>
+                  <h5 class="fw-bold mb-3"><i class="fas fa-filter me-2 text-primary"></i>Filter Ketersediaan</h5>
 
                   <div class="mb-3">
-                    <label class="small text-muted fw-bold mb-2">Pilih Mahasiswa</label>
+                    <label class="small text-muted fw-bold mb-2">Cek Kecocokan Dengan:</label>
                     <select id="studentSelect" class="form-select rounded-pill shadow-sm">
                       <option value="" selected>Loading...</option>
                     </select>
@@ -82,21 +92,24 @@
                     <label class="small text-muted fw-bold mb-2">Mode Bimbingan</label>
                     <select id="modeSelect" class="form-select rounded-pill shadow-sm bg-light border-0">
                       <option value="individual">Bimbingan Individual (Saya Saja)</option>
-                      <option value="joint" class="fw-bold text-primary">★ Bimbingan Gabungan (Joint)</option>
+                      <option value="joint" class="fw-bold text-primary">Bimbingan Gabungan</option>
                     </select>
-                    <small class="text-muted fst-italic mt-1 d-block" style="font-size: 0.75rem"> Mahasiswa ini memiliki 2 pembimbing. </small>
+                    <small class="text-muted fst-italic mt-1 d-block" style="font-size: 0.75rem"> 
+                        *Mode Gabungan akan mencari irisan waktu kosong antara Anda, Partner, dan Mahasiswa.
+                    </small>
                   </div>
 
                   <hr class="dashed-line my-4" />
 
                   <div id="slotResultContainer" style="display: none">
-                    <h6 class="fw-bold mb-3 text-dark"><i class="far fa-clock me-2 text-warning"></i>Slot Tersedia: <br /><span id="selectedDateLabel" class="text-primary small"></span></h6>
+                    <h6 class="fw-bold mb-3 text-dark">
+                        <i class="far fa-clock me-2 text-warning"></i>
+                        Waktu Tersedia: <br />
+                        <span id="selectedDateLabel" class="text-primary small"></span>
+                    </h6>
 
-                    <div id="slotsWrapper" class="d-grid gap-2" style="max-height: 300px; overflow-y: auto"></div>
-
-                    <div class="mt-3">
-                      <button id="btnCreateSchedule" class="btn btn-primary-custom w-100 rounded-pill fw-bold" disabled onclick="createScheduleByLecturer()">Tetapkan Jadwal Ini</button>
-                    </div>
+                    <div id="slotsWrapper" class="d-flex flex-column" style="max-height: 400px; overflow-y: auto">
+                        </div>
                   </div>
 
                   <div id="emptyStateContainer" class="text-center py-5 text-muted">
@@ -117,12 +130,9 @@
     <script src="../js/sidebar.js"></script>
     <script src="../js/notification.js"></script>
     <script>
-      // public/js/lecturer_calendar.js
-
       let calendar;
       let selectedDateStr = "";
-      let selectedSlot = "";
-      let currentSupervisors = []; // Menyimpan data pembimbing dari mahasiswa terpilih
+      let currentSupervisors = []; 
 
       document.addEventListener("DOMContentLoaded", async () => {
         // 1. Cek Sesi
@@ -141,7 +151,6 @@
         // 4. Listeners
         document.getElementById("studentSelect").addEventListener("change", onStudentChange);
         document.getElementById("modeSelect").addEventListener("change", () => {
-          // Refresh slot jika mode diganti & tanggal sudah dipilih
           if (selectedDateStr) fetchSlots(selectedDateStr);
         });
       });
@@ -150,7 +159,7 @@
         const calendarEl = document.getElementById("calendar");
         calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: "dayGridMonth",
-          headerToolbar: { left: "prev,next today", center: "title", right: "dayGridMonth" },
+          headerToolbar: { left: "prev,next today", center: "title", right: "" }, // Hapus tombol view kanan
           locale: "id",
           firstDay: 1,
           selectable: true,
@@ -158,7 +167,7 @@
 
           dateClick: function (info) {
             // Visual Highlight
-            document.querySelectorAll(".fc-day").forEach((el) => (el.style.backgroundColor = ""));
+            document.querySelectorAll(".fc-daygrid-day").forEach((el) => (el.style.backgroundColor = ""));
             info.dayEl.style.backgroundColor = "#e7f1ff";
 
             selectedDateStr = info.dateStr;
@@ -190,6 +199,7 @@
           select.innerHTML = html;
         } catch (e) {
           console.error(e);
+          select.innerHTML = '<option value="">Gagal memuat data</option>';
         }
       }
 
@@ -206,36 +216,31 @@
         document.getElementById("slotResultContainer").style.display = "none";
         modeContainer.style.display = "none";
         selectedDateStr = "";
-        document.querySelectorAll(".fc-day").forEach((el) => (el.style.backgroundColor = ""));
+        
+        // Hapus highlight kalender saat ganti user
+        if(calendar) {
+            document.querySelectorAll(".fc-daygrid-day").forEach((el) => (el.style.backgroundColor = ""));
+        }
 
         if (!studentId) return;
 
         try {
-          // Ambil data semua pembimbing mahasiswa ini
           const res = await fetch(`/api/lecturer/student-supervisors/${studentId}`);
           const result = await res.json();
 
           if (result.success) {
             currentSupervisors = result.data;
 
-            // Cek apakah ada partner (jumlah supervisor > 1)
             if (currentSupervisors.length > 1) {
-              // Cari nama partner
               const partner = currentSupervisors.find((s) => s.user_id !== myId);
               const partnerName = partner ? partner.name : "Dosen Lain";
 
-              // Tampilkan Dropdown Mode dengan 2 Opsi Spesifik
               modeContainer.style.display = "block";
               modeSelect.innerHTML = `
-                    <option value="individual">
-                        Hanya Saya & Mahasiswa
-                    </option>
-                    <option value="joint" class="fw-bold text-primary">
-                        Gabungan (Saya, ${partnerName} & Mahasiswa)
-                    </option>
+                    <option value="individual">Hanya Saya & Mahasiswa</option>
+                    <option value="joint" class="fw-bold text-primary">Gabungan (Saya, ${partnerName} & Mahasiswa)</option>
                 `;
             } else {
-              // Jika cuma 1 pembimbing (saya saja), sembunyikan mode select
               modeContainer.style.display = "none";
               modeSelect.innerHTML = `<option value="individual" selected>Individual</option>`;
             }
@@ -245,7 +250,7 @@
         }
       }
 
-      // --- 3. FETCH SLOTS (LOGIKA PENTING) ---
+      // --- 3. FETCH SLOTS (READ ONLY) ---
       async function fetchSlots(date) {
         const container = document.getElementById("slotsWrapper");
         const resultDiv = document.getElementById("slotResultContainer");
@@ -257,29 +262,22 @@
         const myId = userSession.user_id;
 
         if (!studentId) {
-          alert("Pilih mahasiswa dulu.");
+          container.innerHTML = '<div class="text-center text-danger small p-3">Silakan pilih mahasiswa terlebih dahulu.</div>';
           return;
         }
 
         // UI Loading
         emptyDiv.style.display = "none";
         resultDiv.style.display = "block";
-        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div><div class="small mt-2">Mencocokkan jadwal...</div></div>';
-        document.getElementById("btnCreateSchedule").disabled = true;
+        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div><div class="small mt-2">Mengecek jadwal...</div></div>';
 
-        // --- LOGIKA PENENTUAN ID ---
+        // Tentukan ID siapa saja yang dicek bentroknya
         let targetLecturerIds = [];
-
         if (mode === "individual") {
-          // CASE 1: Hanya Saya + Mahasiswa
-          // Backend akan mencari irisan jadwal (Saya) ∩ (Mahasiswa)
           targetLecturerIds = [myId];
         } else {
-          // CASE 2: Saya + Partner + Mahasiswa
-          // Backend akan mencari irisan jadwal (Saya) ∩ (Partner) ∩ (Mahasiswa)
           targetLecturerIds = currentSupervisors.map((s) => s.user_id);
         }
-
         const idsParam = targetLecturerIds.join(",");
 
         try {
@@ -289,30 +287,23 @@
           if (result.success && result.data.length > 0) {
             let html = "";
             result.data.forEach((slot) => {
+              // Render DIV statis
               html += `
-                <button class="btn btn-slot w-100 mb-2 py-2" onclick="selectSlot(this, '${slot.value}')">
-                    ${slot.value}
-                </button>`;
+                <div class="slot-item">
+                    <i class="far fa-clock me-2 text-primary"></i> ${slot.value}
+                </div>`;
             });
             container.innerHTML = html;
           } else {
-            container.innerHTML = `<div class="text-center py-4 small text-muted">Tidak ada jadwal yang cocok.</div>`;
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="far fa-times-circle fa-2x text-muted mb-2"></i>
+                    <p class="small text-muted mb-0">Tidak ada jadwal yang cocok.</p>
+                </div>`;
           }
         } catch (e) {
           container.innerHTML = '<div class="text-center text-danger small">Gagal memuat slot.</div>';
         }
-      }
-
-      function selectSlot(btn, timeRange) {
-        document.querySelectorAll(".btn-slot").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        selectedSlot = timeRange;
-        document.getElementById("btnCreateSchedule").disabled = false;
-      }
-
-      function createScheduleByLecturer() {
-        const studentId = document.getElementById("studentSelect").value;
-        alert(`Jadwal Terpilih:\nTanggal: ${selectedDateStr}\nJam: ${selectedSlot}\n\n(Fitur Simpan akan diimplementasikan selanjutnya)`);
       }
     </script>
   </body>
