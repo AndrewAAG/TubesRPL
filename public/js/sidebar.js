@@ -1,5 +1,3 @@
-// public/js/components/sidebar.js
-
 function renderSidebar() {
   // Ambil data user dari session
   const userSession = JSON.parse(localStorage.getItem("user_session")) || {
@@ -8,7 +6,7 @@ function renderSidebar() {
     npm: "NPM",
   };
 
-  const role = userSession.role; // 'student' atau 'lecturer'
+  const role = userSession.role;
   const path = window.location.pathname;
 
   // Fungsi cek aktif
@@ -110,12 +108,30 @@ function renderSidebar() {
 
         <div class="nav-custom">
             ${menuHTML}
-            <div style="height: 50px;"></div>
         </div>
+
+        <div class="px-4 pb-5 mt-3">
+                <hr class="border-secondary opacity-50 mb-4">
+                
+                <button onclick="globalLogout()" 
+                        class="btn btn-danger w-100 d-flex align-items-center justify-content-center py-2 rounded-pill shadow-sm"
+                        style="transition: all 0.3s ease;">
+                    <i class="fas fa-sign-out-alt me-2"></i> 
+                    <span class="fw-bold">Logout</span>
+                </button>
+            </div>
     `;
 
   const wrapper = document.getElementById("sidebar-wrapper");
   if (wrapper) wrapper.innerHTML = sidebarHTML;
 }
+
+window.globalLogout = function () {
+  if (confirm("Apakah Anda yakin ingin keluar?")) {
+    localStorage.clear();
+    // Arahkan ke halaman login (sesuaikan path jika perlu, misal /login.html)
+    window.location.href = "/login";
+  }
+};
 
 document.addEventListener("DOMContentLoaded", renderSidebar);

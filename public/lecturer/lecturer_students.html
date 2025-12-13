@@ -104,7 +104,6 @@
               <h2 class="fw-bold text-primary mb-1">Daftar Mahasiswa</h2>
 
               <div class="d-flex align-items-center gap-3">
-                <button onclick="logout()" class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-2"><i class="fas fa-sign-out-alt"></i> Logout</button>
                 <div class="notification-circle">
                   <i class="fas fa-bell fa-lg text-secondary"></i>
                 </div>
@@ -225,10 +224,6 @@
         window.location.href = `/lecturer/student-progress?id=${studentId}`;
       }
 
-      function logout() {
-        localStorage.clear();
-        window.location.href = "/login";
-      }
     </script>
   </body>
 </html>
