@@ -276,11 +276,16 @@
       }
     }
 
-    // [REVISI] Render Kartu tanpa tombol Approve/Reject
     function renderSchedules(data) {
       const container = document.getElementById("schedule-container");
 
-      if (data.length === 0) {
+      // [REVISI] Filter Data: Hanya tampilkan yang statusnya BUKAN 'completed'
+      // Kita juga menyembunyikan 'rejected' agar tidak memenuhi tampilan
+      const activeSchedules = data.filter(item => {
+          return item.status !== 'completed' && item.status !== 'rejected';
+      });
+
+      if (activeSchedules.length === 0) {
         container.innerHTML = `
             <div class="text-center py-5 text-muted">
                 <i class="far fa-calendar-times fa-3x mb-3"></i>
@@ -290,19 +295,24 @@
       }
 
       let html = "";
-      data.forEach((item) => {
+      
+      // Looping data yang sudah difilter (activeSchedules)
+      activeSchedules.forEach((item) => {
         const locationDisplay = item.type === "Online" ? (item.link ? `<a href="${item.link}" target="_blank" class="text-decoration-none text-primary fw-bold">${item.link}</a>` : "-") : item.location || "--";
 
-        // Logic Tombol: Hanya munculkan Reschedule jika status APPROVED
+        // Logic Tombol: Hanya munculkan Reschedule & Selesai jika status APPROVED
         let actionButtons = "";
         if (item.status === 'approved') {
              actionButtons = `
+             <button class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm me-1" 
+                     onclick="markAsComplete(${item.id})" title="Tandai Selesai">
+                 <i class="fas fa-check-double me-1"></i> Selesai
+             </button>
              <button class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold shadow-sm" 
                      onclick="openRescheduleModal(${item.id}, ${item.student_id}, '${item.lecturer_ids_str || currentLecturerId}')">
                  Reschedule
              </button>`;
-        }
-        // Jika Pending atau Rejected, tidak ada tombol di halaman ini (sesuai request)
+        } 
 
         html += `
         <div class="card-schedule">
@@ -345,6 +355,27 @@
         `;
       });
       container.innerHTML = html;
+    }
+
+    async function markAsComplete(appId) {
+        if(!confirm("Apakah bimbingan ini sudah selesai? Status akan diubah menjadi Completed.")) return;
+
+        try {
+            const res = await fetch(`/api/schedules/${appId}/complete`, {
+                method: 'PUT'
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                // alert(result.message); // Opsional
+                fetchSchedules("all"); // Refresh tabel
+            } else {
+                alert("Gagal: " + result.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Terjadi kesalahan koneksi.");
+        }
     }
 
     // --- LOGIC RESCHEDULE (UPDATED SMART SLOT) ---

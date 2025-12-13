@@ -195,27 +195,24 @@
 
       function renderSchedules(schedules) {
         const container = document.getElementById("schedule-container");
-        const now = new Date(); // Waktu sekarang
 
-        // [REVISI] Filter hanya jadwal yang belum lewat (Masa Depan)
-        // Kita gunakan field 'timestamp' yang baru kita tambahkan di controller
-        const upcomingSchedules = schedules.filter((item) => {
-          const itemDate = new Date(item.timestamp);
-          return itemDate >= now; // Hanya tampilkan jika waktu >= sekarang
+        const activeSchedules = schedules.filter((item) => {
+          return item.status !== 'completed';
         });
 
-        if (!upcomingSchedules || upcomingSchedules.length === 0) {
+        if (!activeSchedules || activeSchedules.length === 0) {
           container.innerHTML = `
             <div class="text-center py-5 text-muted">
                 <i class="far fa-calendar-check fa-3x mb-3"></i>
-                <p>Tidak ada jadwal bimbingan yang akan datang.</p>
+                <p>Tidak ada jadwal bimbingan aktif.</p>
             </div>`;
           return;
         }
 
         let htmlContent = "";
 
-        upcomingSchedules.forEach((item) => {
+        // Looping data yang sudah difilter (activeSchedules)
+        activeSchedules.forEach((item) => {
           let linkDisplay = "";
           const roomDisplay = item.type === "On Site" && item.location ? item.location : "--";
 
@@ -228,13 +225,14 @@
           }
 
           const btnClass = item.canReschedule ? "btn-primary-custom" : "btn-light text-muted border-0";
+          // Pastikan properti canReschedule dikirim dari backend, atau atur logic di sini
           const btnAttr = item.canReschedule ? `onclick="openReschModal(${item.id}, '${item.lecturer_ids_str}')"` : "disabled";
 
           htmlContent += `
         <div class="card-schedule">
             <div class="d-flex justify-content-between align-items-start mb-4">
                 <span class="badge-pill-custom">${item.type}</span>
-                <span class="${item.statusClass} px-3 py-1 rounded-pill small fw-bold">${item.status}</span>
+                <span class="${item.statusClass} px-3 py-1 rounded-pill small fw-bold text-capitalize">${item.status}</span>
             </div>
 
             <div class="row">

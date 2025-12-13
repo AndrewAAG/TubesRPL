@@ -30,7 +30,7 @@ exports.getStudentSchedules = async (req, res) => {
             return {
                 id: item.id,
                 type: item.mode === 'online' ? 'Online' : 'On Site',
-                status: mapStatusToLabel(item.status), // Fungsi helper bawah
+                status: item.status, // Fungsi helper bawah
                 statusClass: statusClass, 
                 date: formattedDate,
                 time: `${startTime} - ${endTime}`,
@@ -215,6 +215,7 @@ exports.respondToRequest = async (req, res) => {
     }
 };
 
+/*
 // Translate status DB ke Bahasa Indonesia
 function mapStatusToLabel(status) {
     switch (status) {
@@ -224,7 +225,7 @@ function mapStatusToLabel(status) {
         case 'completed': return 'Selesai';
         default: return status;
     }
-}
+} */
 
 exports.getClassSchedule = async (req, res) => {
     try {
@@ -660,5 +661,36 @@ exports.createLecturerSchedule = async (req, res) => {
     } catch (error) {
         console.error("Create Schedule Error:", error);
         res.status(500).json({ success: false, message: 'Server Error.' });
+    }
+};
+
+exports.markAsComplete = async (req, res) => {
+    const { id } = req.params; 
+
+    try {   
+        // Update status di DB
+        await ScheduleModel.updateGlobalStatus(id, 'completed');
+
+        // Notifikasi ke Mahasiswa (Opsional tapi disarankan)
+        const [rows] = await db.execute(`
+            SELECT a.student_id, a.start_time FROM appointments a WHERE a.app_id = ?
+        `, [id]);
+
+        if (rows.length > 0) {
+            const data = rows[0];
+            const dateStr = new Date(data.start_time).toLocaleDateString('id-ID');
+            await NotificationModel.createBulk(
+                [data.student_id], 
+                "Bimbingan Selesai ✅", 
+                `Dosen telah menandai bimbingan tanggal ${dateStr} sebagai selesai.`, 
+                "Sistem Jadwal"
+            );
+        }
+
+        res.json({ success: true, message: 'Bimbingan berhasil ditandai selesai.' });
+
+    } catch (error) {
+        console.error("Mark Complete Error:", error);
+        res.status(500).json({ success: false, message: 'Gagal update status.' });
     }
 };

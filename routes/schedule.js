@@ -12,6 +12,6 @@ router.get('/available-slots', scheduleController.getAvailableSlots);
 router.get('/supervisors/:studentId', scheduleController.getMySupervisors);
 router.post('/request', scheduleController.submitRequest);
 router.post('/lecturer-create', scheduleController.createLecturerSchedule);
-
+router.put('/:id/complete', scheduleController.markAsComplete);
 
 module.exports = router;
