@@ -390,6 +390,9 @@
       document.getElementById("reschSlotContainer").innerHTML = '<small class="text-muted d-block text-center py-3">Pilih tanggal baru.</small>';
       document.getElementById("reschSelectedTime").value = "";
 
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById("newDate").min = today;
+      
       new bootstrap.Modal(document.getElementById("rescheduleModal")).show();
     };
 
@@ -491,6 +494,9 @@
         document.getElementById("selectedTimeRange").value = "";
         document.getElementById("groupMode").style.display = "none";
         
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("inputStartDate").min = today;
+
         toggleFormType(); 
         toggleLocLabel();
 

@@ -53,7 +53,7 @@ exports.getStudentSchedules = async (req, res) => {
 };
 
 exports.rescheduleAppointment = async (req, res) => {
-    const { id } = req.params; // app_id
+    const { id } = req.params; 
     // triggerBy = 'student' karena ini fitur mahasiswa
     const { date, timeRange, reason, userId } = req.body; 
 
@@ -64,8 +64,8 @@ exports.rescheduleAppointment = async (req, res) => {
         const newEndTime = `${date} ${endStr.replace('.', ':')}:00`;
 
         // Validasi Masa Depan
-        if (new Date(newStartTime) <= new Date()) {
-            return res.status(400).json({ success: false, message: 'Waktu baru harus di masa depan.' });
+        if (new Date(newStartTime) < new Date()) {
+            return res.status(400).json({ success: false, message: 'Waktu baru tidak boleh di masa lalu.' });
         }
 
         // 2. UPDATE DATABASE
@@ -298,22 +298,18 @@ exports.getAvailableSlots = async (req, res) => {
         const lecIdArray = lecturerIds.toString().split(',').map(Number);
 
         // 3. FETCH DATA BLOCKERS (PENGHALANG)
-        // Kita ambil semua kemungkinan penghalang: Jadwal Dosen DAN Jadwal Mahasiswa
-        
-        // A. Dosen (Sibuk & Appt Existing)
         const lecturerBusyPromises = lecIdArray.map(id => ScheduleModel.getLecturerBusySchedules(id, dayOfWeek));
         const lecturerApptPromises = lecIdArray.map(id => ScheduleModel.getExistingAppointments(id, 'lecturer', date));
 
-        // B. Mahasiswa (Kuliah Rutin & Appt Existing)
         const studentClassPromise = ScheduleModel.getStudentClassSchedule(studentId, dayOfWeek);
         const studentApptPromise = ScheduleModel.getExistingAppointments(studentId, 'student', date);
 
         // TUNGGU SEMUA DATA
         const [
-            lecturerBusyResults,    // Array of Arrays
-            lecturerApptResults,    // Array of Arrays
-            studentClasses,         // Array (Jadwal Kuliah Mahasiswa)
-            studentAppts            // Array (Janji Lain Mahasiswa)
+            lecturerBusyResults,    
+            lecturerApptResults,    
+            studentClasses,         
+            studentAppts            
         ] = await Promise.all([
             Promise.all(lecturerBusyPromises),
             Promise.all(lecturerApptPromises),
@@ -324,7 +320,7 @@ exports.getAvailableSlots = async (req, res) => {
         // 4. GENERATE SLOT
         const START_HOUR = 7; 
         const END_HOUR = 17; 
-        const SLOT_DURATION = 60; // Menit
+        const SLOT_DURATION = 60; 
         
         let availableSlots = [];
 
@@ -344,27 +340,39 @@ exports.getAvailableSlots = async (req, res) => {
 
         // LOOPING SLOT PER JAM (07:00 - 17:00)
         for (let h = START_HOUR; h < END_HOUR; h++) {
+            
+            // --- [FILTER BARU: CEK JAM LEWAT] ---
+            const now = new Date();
+            // Ambil tanggal hari ini format YYYY-MM-DD (sesuai local time server)
+            const todayStr = now.toLocaleDateString('en-CA'); 
+            
+            // Jika tanggal yang diminta adalah HARI INI
+            if (date === todayStr) {
+                // Jika jam slot (h) kurang dari atau sama dengan jam sekarang, SKIP.
+                if (h <= now.getHours()) {
+                    continue; 
+                }
+            }
+            // ------------------------------------
+
             const slotStart = h * 60; 
             const slotEnd = slotStart + SLOT_DURATION;
             let isConflict = false;
 
             // --- [CRITICAL CHECK 1] CEK JADWAL MAHASISWA DULU ---
-            // Gabungkan Kuliah + Janji Lain Mahasiswa
             const allStudentBlockers = [...studentClasses, ...studentAppts];
             
             for (let block of allStudentBlockers) {
                 const bStart = toMinutes(block.start_time);
                 const bEnd = toMinutes(block.end_time);
                 
-                // Jika Slot ini bertabrakan dengan jadwal mahasiswa -> CONFLICT!
                 if (slotStart < bEnd && slotEnd > bStart) { 
                     isConflict = true; 
-                    break; // Langsung stop, tidak perlu cek dosen lagi
+                    break; 
                 }
             }
 
             // --- [CRITICAL CHECK 2] CEK JADWAL SEMUA DOSEN ---
-            // Hanya dijalankan jika mahasiswa kosong di jam tersebut
             if (!isConflict) {
                 for (let i = 0; i < lecIdArray.length; i++) {
                     const thisLecturerBlockers = [
@@ -376,13 +384,12 @@ exports.getAvailableSlots = async (req, res) => {
                         const bStart = toMinutes(block.start_time);
                         const bEnd = toMinutes(block.end_time);
                         
-                        // Jika Dosen Sibuk -> CONFLICT!
                         if (slotStart < bEnd && slotEnd > bStart) { 
                             isConflict = true; 
                             break; 
                         }
                     }
-                    if (isConflict) break; // Jika salah satu dosen sibuk, slot batal
+                    if (isConflict) break; 
                 }
             }
 
@@ -424,6 +431,9 @@ exports.submitRequest = async (req, res) => {
         const startDateTime = `${date} ${startStr.replace('.', ':')}:00`;
         const endDateTime = `${date} ${endStr.replace('.', ':')}:00`;
 
+        if (new Date(startDateTime) < new Date()) {
+            return res.status(400).json({ success: false, message: 'Waktu bimbingan tidak boleh di masa lalu.' });
+        }
 
         // Simpan ke DB
         const appId = await ScheduleModel.createRequest({
@@ -463,107 +473,7 @@ exports.getMySupervisors = async (req, res) => {
 };
 
 
-/*
-exports.createLecturerSchedule = async (req, res) => {
-    try {
-        const { 
-            lecturerId, studentId, type, // type: 'single' | 'recurring'
-            startDate, endDate, dayOfWeek, // dayOfWeek: 0-6 (Minggu-Sabtu) atau string
-            timeRange, frequency, // frequency: 1 (tiap minggu), 2 (tiap 2 minggu)
-            mode, location, notes 
-        } = req.body;
 
-        // 1. Parse Waktu (07.00 - 09.00)
-        const [startStr, endStr] = timeRange.split(' - ');
-        
-        // Helper untuk set jam pada objek Date
-        const setTime = (dateObj, timeStr) => {
-            const [h, m] = timeStr.replace('.', ':').split(':');
-            const d = new Date(dateObj);
-            d.setHours(parseInt(h), parseInt(m), 0);
-            return d;
-        };
-
-        let appointmentsToInsert = [];
-        let datesToCheck = []; // Untuk validasi bentrok
-
-        // 2. LOGIKA GENERATE TANGGAL
-        if (type === 'single') {
-            const targetDate = new Date(startDate); // Single pakai startDate saja
-            appointmentsToInsert.push({
-                start: setTime(targetDate, startStr),
-                end: setTime(targetDate, endStr)
-            });
-            datesToCheck.push(targetDate);
-        } 
-        else if (type === 'recurring') {
-            let currDate = new Date(startDate);
-            const end = new Date(endDate);
-            const targetDay = parseInt(dayOfWeek); // 1 = Senin, 2 = Selasa, dst.
-            const freq = parseInt(frequency) || 1; 
-
-            // Loop dari Start sampai End
-            while (currDate <= end) {
-                // Cek apakah hari ini sesuai dengan hari yang dipilih?
-                if (currDate.getDay() === targetDay) {
-                    appointmentsToInsert.push({
-                        start: setTime(currDate, startStr),
-                        end: setTime(currDate, endStr)
-                    });
-                    datesToCheck.push(new Date(currDate));
-                    
-                    // Lompat sesuai frekuensi (minggu)
-                    currDate.setDate(currDate.getDate() + (7 * freq)); 
-                } else {
-                    // Jika harinya belum cocok, maju 1 hari
-                    currDate.setDate(currDate.getDate() + 1);
-                }
-            }
-        }
-
-        if (appointmentsToInsert.length === 0) {
-            return res.status(400).json({ success: false, message: 'Tidak ada tanggal yang cocok dalam rentang tersebut.' });
-        }
-
-        // 3. (OPSIONAL TAPI DISARANKAN) CEK BENTROK
-        // Karena "Auto Approve", sangat bahaya jika dosen menimpa jadwal lain.
-        // Anda bisa memanggil getAvailableSlots logic di sini untuk setiap tanggal.
-        // Untuk mempersingkat kode MVP ini, saya skip pengecekan detail loop, 
-        // tapi idealnya Anda cek conflict dulu.
-
-        // 4. MAPPING DATA UNTUK MODEL
-        const dataPayload = appointmentsToInsert.map(slot => ({
-            studentId,
-            lecturerId,
-            startTime: slot.start,
-            endTime: slot.end,
-            mode, location, notes
-        }));
-
-        // 5. SIMPAN KE DB
-        await ScheduleModel.createLecturerAppointment(dataPayload);
-
-        // 6. NOTIFIKASI KE MAHASISWA
-        // Ambil nama Dosen
-        const [rows] = await db.execute('SELECT name FROM users WHERE user_id = ?', [lecturerId]);
-        const dosenName = rows[0]?.name || 'Dosen';
-        
-        const title = "Jadwal Bimbingan Baru 📅";
-        const msg = type === 'single' 
-            ? `Dosen ${dosenName} menetapkan jadwal bimbingan pada ${startDate}.`
-            : `Dosen ${dosenName} menetapkan jadwal bimbingan rutin mulai ${startDate}.`;
-
-        await NotificationModel.createBulk([studentId], title, msg, `Dosen: ${dosenName}`);
-
-        res.json({ success: true, message: `Berhasil membuat ${appointmentsToInsert.length} jadwal bimbingan.` });
-
-    } catch (error) {
-        console.error("Create Lecturer Schedule Error:", error);
-        res.status(500).json({ success: false, message: 'Gagal membuat jadwal.' });
-    }
-}; */
-
-// controllers/scheduleController.js
 
 exports.createLecturerSchedule = async (req, res) => {
     try {
@@ -584,6 +494,11 @@ exports.createLecturerSchedule = async (req, res) => {
             d.setHours(parseInt(h), parseInt(m), 0);
             return d;
         };
+
+        const checkDate = new Date(`${startDate} ${startStr.replace('.', ':')}:00`);
+        if (checkDate < new Date()) {
+            return res.status(400).json({ success: false, message: 'Tanggal mulai tidak boleh di masa lalu.' });
+        }
 
         let appointmentsToInsert = [];
 

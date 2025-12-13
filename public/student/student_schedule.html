@@ -296,6 +296,9 @@
         document.getElementById("requestForm").reset();
         document.getElementById("slotsContainer").innerHTML = '<small class="text-muted d-block text-center py-3">Pilih tanggal.</small>';
 
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("reqDate").min = today;
+
         // 2. Load Supervisor
         await loadSupervisorsForModal(userSession.user_id);
 
@@ -453,6 +456,9 @@
         document.getElementById("reschAppId").value = appId;
         document.getElementById("reschLecturerIds").value = lecturerIdsStr; // String "1" atau "1,2"
 
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("reschDate").min = today;
+        
         new bootstrap.Modal(document.getElementById("rescheduleModal")).show();
       }
 
